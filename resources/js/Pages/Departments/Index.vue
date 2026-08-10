@@ -81,7 +81,7 @@ const doDelete = () => router.delete(`/departments/${toDelete.value.id}`, {
 
             <template v-else>
                 <div class="table-wrap">
-                    <table class="table">
+                    <table class="table table-compact">
                         <thead>
                             <tr>
                                 <SortableTh field="code" :sort="filters?.sort" :direction="filters?.direction" url="/departments" :extra="{ search: search || undefined }">Code</SortableTh>

@@ -20,7 +20,7 @@ class Asset extends Model
         'purchase_date', 'deployment_date', 'purchase_cost',
         'expected_lifespan_years', 'warranty_until',
         'current_status',
-        'current_holder_id', 'current_location_id',
+        'current_holder_id', 'current_location_id', 'department_id',
         'replaced_by_asset_id', 'replaces_asset_id',
         'notes',
     ];
@@ -45,9 +45,11 @@ class Asset extends Model
     public function condition(): BelongsTo        { return $this->belongsTo(Condition::class); }
     public function currentHolder(): BelongsTo    { return $this->belongsTo(Employee::class, 'current_holder_id'); }
     public function currentLocation(): BelongsTo  { return $this->belongsTo(Location::class, 'current_location_id'); }
+    public function department(): BelongsTo       { return $this->belongsTo(Department::class); }
     public function replacedBy(): BelongsTo       { return $this->belongsTo(Asset::class, 'replaced_by_asset_id'); }
     public function replaces(): BelongsTo         { return $this->belongsTo(Asset::class, 'replaces_asset_id'); }
     public function movements(): HasMany          { return $this->hasMany(AssetMovement::class)->orderByDesc('movement_date')->orderByDesc('id'); }
+    public function partChanges(): HasMany        { return $this->hasMany(AssetPartChange::class)->orderByDesc('changed_at')->orderByDesc('id'); }
 
     public static function formatYearsMonths(?Carbon $start, ?Carbon $end = null): ?string
     {

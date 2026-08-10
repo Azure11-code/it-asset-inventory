@@ -23,13 +23,14 @@ watch(() => props.show, (val) => {
     document.body.style.overflow = val ? 'hidden' : '';
 });
 
+// Full-width on mobile (w-full with small side gutter), constrained on sm+ screens.
 const widthClass = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-lg',
-    xl: 'max-w-xl',
-    '2xl': 'max-w-2xl',
-    '3xl': 'max-w-3xl',
+    sm:   'w-full sm:max-w-sm',
+    md:   'w-full sm:max-w-md',
+    lg:   'w-full sm:max-w-lg',
+    xl:   'w-full sm:max-w-xl',
+    '2xl':'w-full sm:max-w-2xl',
+    '3xl':'w-full sm:max-w-3xl',
 };
 </script>
 
@@ -44,7 +45,7 @@ const widthClass = {
     >
         <div v-if="show" class="fixed inset-0 z-50 overflow-y-auto">
             <div class="fixed inset-0 bg-slate-900/50" @click="close" />
-            <div class="flex min-h-full items-center justify-center p-4">
+            <div class="flex min-h-full items-center justify-center p-2 sm:p-4">
                 <Transition
                     enter-active-class="transition ease-out duration-200"
                     enter-from-class="opacity-0 translate-y-2 sm:scale-95"

@@ -106,13 +106,13 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
         </template>
 
         <div class="card">
-            <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 p-4">
-                <div class="relative flex-1 min-w-[240px] max-w-sm">
+            <div class="grid gap-2 border-b border-slate-100 p-3 sm:grid-cols-[minmax(220px,1fr)_repeat(2,minmax(0,12rem))] sm:items-center">
+                <div class="relative">
                     <MagnifyingGlassIcon class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input v-model="search" type="search" placeholder="Search name, employee #, email..." class="input pl-9" />
                 </div>
-                <div class="w-48"><Combobox v-model="departmentFilter" :options="departments" placeholder="All Departments" null-label="All Departments" /></div>
-                <div class="w-40"><Combobox v-model="statusFilter" :options="EMPLOYEE_STATUSES" value-key="value" label-key="label" placeholder="All Status" null-label="All Status" /></div>
+                <Combobox v-model="departmentFilter" :options="departments" placeholder="All Departments" null-label="All Departments" />
+                <Combobox v-model="statusFilter" :options="EMPLOYEE_STATUSES" value-key="value" label-key="label" placeholder="All Status" null-label="All Status" />
             </div>
 
             <EmptyState
@@ -128,13 +128,13 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
 
             <template v-else>
                 <div class="table-wrap">
-                    <table class="table">
+                    <table class="table table-compact">
                         <thead>
                             <tr>
                                 <SortableTh field="employee" :sort="filters?.sort" :direction="filters?.direction" url="/employees" :extra="{ search: search || undefined, department_id: departmentFilter || undefined, status: statusFilter || undefined }">Employee</SortableTh>
-                                <SortableTh field="position" :sort="filters?.sort" :direction="filters?.direction" url="/employees" :extra="{ search: search || undefined, department_id: departmentFilter || undefined, status: statusFilter || undefined }">Position</SortableTh>
-                                <SortableTh field="department" :sort="filters?.sort" :direction="filters?.direction" url="/employees" :extra="{ search: search || undefined, department_id: departmentFilter || undefined, status: statusFilter || undefined }">Department</SortableTh>
-                                <SortableTh field="location" :sort="filters?.sort" :direction="filters?.direction" url="/employees" :extra="{ search: search || undefined, department_id: departmentFilter || undefined, status: statusFilter || undefined }">Location</SortableTh>
+                                <SortableTh field="position" :sort="filters?.sort" :direction="filters?.direction" url="/employees" :extra="{ search: search || undefined, department_id: departmentFilter || undefined, status: statusFilter || undefined }" class="hidden md:table-cell">Position</SortableTh>
+                                <SortableTh field="department" :sort="filters?.sort" :direction="filters?.direction" url="/employees" :extra="{ search: search || undefined, department_id: departmentFilter || undefined, status: statusFilter || undefined }" class="hidden sm:table-cell">Department</SortableTh>
+                                <SortableTh field="location" :sort="filters?.sort" :direction="filters?.direction" url="/employees" :extra="{ search: search || undefined, department_id: departmentFilter || undefined, status: statusFilter || undefined }" class="hidden lg:table-cell">Location</SortableTh>
                                 <SortableTh field="status" :sort="filters?.sort" :direction="filters?.direction" url="/employees" :extra="{ search: search || undefined, department_id: departmentFilter || undefined, status: statusFilter || undefined }">Status</SortableTh>
                                 <th class="text-right">Actions</th>
                             </tr>
@@ -145,21 +145,25 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
                             </tr>
                             <tr v-for="row in employees.data" :key="row.id">
                                 <td>
-                                    <div class="flex items-center gap-3">
-                                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-semibold text-brand-700 ring-1 ring-brand-100">
+                                    <div class="flex items-center gap-2 sm:gap-3">
+                                        <div class="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-[10px] sm:text-xs font-semibold text-brand-700 ring-1 ring-brand-100">
                                             {{ initials(row) }}
                                         </div>
                                         <div class="min-w-0">
-                                            <div class="cell-strong">
+                                            <div class="cell-strong truncate">
                                                 {{ row.last_name }}, {{ row.first_name }}{{ row.middle_name ? ' ' + row.middle_name.charAt(0) + '.' : '' }}
                                             </div>
-                                            <div class="text-xs text-slate-500">{{ row.email || row.employee_no }}</div>
+                                            <div class="text-[11px] text-slate-500 truncate">{{ row.email || row.employee_no }}</div>
+                                            <!-- Fold Position + Department into the primary cell on mobile -->
+                                            <div class="md:hidden text-[11px] text-slate-500 truncate">
+                                                {{ row.position || '' }}<span v-if="row.position && row.department"> · </span>{{ row.department?.name || '' }}
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
-                                <td>{{ row.position || '—' }}</td>
-                                <td>{{ row.department?.name || '—' }}</td>
-                                <td>{{ row.location?.name || '—' }}</td>
+                                <td class="hidden md:table-cell">{{ row.position || '—' }}</td>
+                                <td class="hidden sm:table-cell">{{ row.department?.name || '—' }}</td>
+                                <td class="hidden lg:table-cell">{{ row.location?.name || '—' }}</td>
                                 <td><Badge :tone="statusTone[row.status]" dot>{{ row.status }}</Badge></td>
                                 <td class="cell-right">
                                     <div class="inline-flex items-center gap-1">

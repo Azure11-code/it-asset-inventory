@@ -82,12 +82,12 @@ const doDelete = () => router.delete(`/categories/${toDelete.value.id}`, {
 
             <template v-else>
                 <div class="table-wrap">
-                    <table class="table">
+                    <table class="table table-compact">
                         <thead>
                             <tr>
                                 <SortableTh field="name" :sort="filters?.sort" :direction="filters?.direction" url="/categories" :extra="{ search: search || undefined }">Name</SortableTh>
                                 <SortableTh field="prefix" :sort="filters?.sort" :direction="filters?.direction" url="/categories" :extra="{ search: search || undefined }">Prefix</SortableTh>
-                                <SortableTh field="description" :sort="filters?.sort" :direction="filters?.direction" url="/categories" :extra="{ search: search || undefined }">Description</SortableTh>
+                                <SortableTh field="description" :sort="filters?.sort" :direction="filters?.direction" url="/categories" :extra="{ search: search || undefined }" class="hidden md:table-cell">Description</SortableTh>
                                 <SortableTh field="is_active" :sort="filters?.sort" :direction="filters?.direction" url="/categories" :extra="{ search: search || undefined }">Status</SortableTh>
                                 <th class="text-right">Actions</th>
                             </tr>
@@ -102,7 +102,7 @@ const doDelete = () => router.delete(`/categories/${toDelete.value.id}`, {
                                     <Badge v-if="row.prefix" tone="brand">{{ row.prefix }}</Badge>
                                     <span v-else class="text-slate-400">—</span>
                                 </td>
-                                <td class="cell-muted max-w-xl truncate">{{ row.description || '—' }}</td>
+                                <td class="cell-muted max-w-xl truncate hidden md:table-cell">{{ row.description || '—' }}</td>
                                 <td>
                                     <Badge :tone="row.is_active ? 'emerald' : 'slate'" dot>
                                         {{ row.is_active ? 'Active' : 'Inactive' }}

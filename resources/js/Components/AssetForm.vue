@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import FormField from '@/Components/FormField.vue';
 import KeyValueList from '@/Components/KeyValueList.vue';
 import Combobox from '@/Components/Combobox.vue';
+import { SparklesIcon } from '@heroicons/vue/24/outline';
 
 const ASSET_STATUSES = [
     { value: 'in_stock',   label: 'In Stock' },
@@ -80,6 +81,40 @@ watch(
         }
     }
 );
+
+// ── Auto-tag from Asset Code Rule ──
+const selectedRuleId = ref(null);
+const rulePreview    = ref('');
+const ruleLoading    = ref(false);
+const ruleError      = ref('');
+
+const applyRule = async (ruleId) => {
+    if (!ruleId) { rulePreview.value = ''; return; }
+    ruleLoading.value = true;
+    ruleError.value = '';
+    try {
+        const res  = await fetch(`/asset-code-rules/${ruleId}/next`, { headers: { Accept: 'application/json' } });
+        const data = await res.json();
+        if (data.full || !data.formatted) {
+            ruleError.value = 'Range is full — nothing to assign.';
+            rulePreview.value = '';
+            return;
+        }
+        rulePreview.value = data.formatted;
+        props.form.asset_tag = data.formatted;
+        // Auto-select the category if the rule has one AND the field is blank
+        const rule = (props.lookups.code_rules || []).find(r => String(r.id) === String(ruleId));
+        if (rule?.category_id && !props.form.category_id) {
+            props.form.category_id = rule.category_id;
+        }
+    } catch (e) {
+        ruleError.value = 'Could not fetch the next number.';
+    } finally {
+        ruleLoading.value = false;
+    }
+};
+
+watch(selectedRuleId, (id) => applyRule(id));
 </script>
 
 <template>
@@ -92,8 +127,21 @@ watch(
                 </div>
             </header>
             <div class="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
+                <FormField v-if="!isEdit && (lookups.code_rules?.length)" label="Auto-generate from Rule" class="sm:col-span-2 lg:col-span-3">
+                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <div class="flex-1">
+                            <Combobox v-model="selectedRuleId" :options="lookups.code_rules" placeholder="Pick a code rule (e.g. LAPTOP)" null-label="— No rule (type manually) —" />
+                        </div>
+                        <div v-if="rulePreview" class="inline-flex items-center gap-2 rounded-md border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-mono text-brand-800">
+                            <SparklesIcon class="h-4 w-4 text-brand-600" /> Next: <strong>{{ rulePreview }}</strong>
+                        </div>
+                        <p v-if="ruleLoading" class="text-xs text-slate-500">Computing…</p>
+                        <p v-if="ruleError" class="text-xs text-rose-600">{{ ruleError }}</p>
+                    </div>
+                    <p class="help">Optional. Picks the next available number sa loob ng rule range. You can still type the tag manually below.</p>
+                </FormField>
                 <FormField label="Asset Tag" :error="form.errors.asset_tag" required>
-                    <input v-model="form.asset_tag" type="text" class="input" placeholder="e.g. LPT-001" />
+                    <input v-model="form.asset_tag" type="text" class="input" placeholder="e.g. LPT-001 or auto-generated" />
                 </FormField>
                 <FormField label="Serial Number" :error="form.errors.serial_number">
                     <input v-model="form.serial_number" type="text" class="input" />

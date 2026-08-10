@@ -67,7 +67,7 @@ class AssetController extends Controller
         }
 
         $assets = $query
-            ->paginate(15)
+            ->paginate(10)
             ->withQueryString()
             ->through(fn ($a) => [
                 'id'              => $a->id,
@@ -97,6 +97,75 @@ class AssetController extends Controller
             ],
             'filters' => $request->only('search', 'status', 'category_id', 'brand_id', 'warranty', 'sort', 'direction'),
         ]);
+    }
+
+    public function importTemplate(\App\Services\AssetImportTemplate $tpl)
+    {
+        return $tpl->stream();
+    }
+
+    public function import(Request $request, \App\Services\AssetXlsxImporter $importer)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls', 'max:5120'], // 5 MB
+        ]);
+
+        $result = $importer->import($request->file('file'));
+
+        $msg = sprintf(
+            '%d asset%s created%s',
+            $result['created'],
+            $result['created'] === 1 ? '' : 's',
+            $result['skipped'] > 0 ? ", {$result['skipped']} row(s) skipped" : ''
+        );
+
+        // Only surface the first 15 skip reasons so the flash message doesn't overflow
+        $skipReasons = collect($result['rows'])
+            ->where('status', 'skipped')
+            ->take(15)
+            ->map(fn ($r) => "Row {$r['row']}" . ($r['tag'] ? " ({$r['tag']})" : '') . ": {$r['reason']}")
+            ->all();
+
+        return redirect()->route('assets.index')
+            ->with('success', $msg)
+            ->with('import_skips', $skipReasons);
+    }
+
+    public function export(Request $request, \App\Services\AssetXlsxExporter $exporter)
+    {
+        $sortKey   = array_key_exists($request->sort, self::SORT_MAP) ? $request->sort : null;
+        $direction = $request->direction === 'desc' ? 'desc' : 'asc';
+
+        $query = Asset::query()
+            ->select('assets.*')
+            ->when($request->search, fn ($q, $s) =>
+                $q->where(fn ($w) => $w->where('asset_tag', 'like', "%{$s}%")
+                                       ->orWhere('serial_number', 'like', "%{$s}%")
+                                       ->orWhere('model', 'like', "%{$s}%"))
+            )
+            ->when($request->status, fn ($q, $s) => $q->where('current_status', $s))
+            ->when($request->category_id, fn ($q, $id) => $q->where('category_id', $id))
+            ->when($request->brand_id, fn ($q, $id) => $q->where('brand_id', $id))
+            ->when($request->warranty, function ($q, $w) {
+                if ($w === 'active')        $q->whereDate('warranty_until', '>', now()->addDays(90));
+                if ($w === 'expiring_soon') $q->whereBetween('warranty_until', [now(), now()->addDays(90)]);
+                if ($w === 'expired')       $q->whereDate('warranty_until', '<', now());
+            });
+
+        if ($sortKey === 'category') {
+            $query->leftJoin('categories', 'assets.category_id', '=', 'categories.id');
+        }
+        if ($sortKey === 'holder') {
+            $query->leftJoin('employees', 'assets.current_holder_id', '=', 'employees.id');
+        }
+        if ($sortKey) {
+            $query->orderBy(self::SORT_MAP[$sortKey], $direction);
+        } else {
+            $query->latest('assets.id');
+        }
+
+        $filename = 'assets-' . now()->format('Ymd-His') . '.xlsx';
+        return $exporter->stream($query, $filename);
     }
 
     public function create()
@@ -135,6 +204,9 @@ class AssetController extends Controller
             'movements.fromLocation:id,name',
             'movements.toLocation:id,name',
             'movements.performer:id,name',
+            'partChanges.performer:id,name',
+            'partChanges.incidentReport:id,ir_no',
+            'partChanges.recommendation:id,doc_no',
         ]);
 
         // Latest assignment movement (issuance or transfer) that brought the
@@ -159,6 +231,19 @@ class AssetController extends Controller
                                 ->select('id', 'name', 'tone')
                                 ->orderBy('sort_order')
                                 ->get(),
+                'users'      => \App\Models\User::select('id', 'name')->orderBy('name')->get(),
+                'incident_reports' => \App\Models\IncidentReport::where('asset_id', $asset->id)
+                                ->whereIn('status', ['approved', 'submitted', 'draft'])
+                                ->orderByDesc('report_date')
+                                ->get(['id', 'ir_no', 'reported_problem'])
+                                ->map(fn ($r) => ['id' => $r->id, 'name' => "{$r->ir_no} — {$r->reported_problem}"])
+                                ->values(),
+                'recommendations'  => \App\Models\Recommendation::where('asset_id', $asset->id)
+                                ->whereIn('status', ['approved', 'submitted', 'draft'])
+                                ->orderByDesc('report_date')
+                                ->get(['id', 'doc_no', 'subject'])
+                                ->map(fn ($r) => ['id' => $r->id, 'name' => "{$r->doc_no} — {$r->subject}"])
+                                ->values(),
             ],
             'asset' => [
                 'id'              => $asset->id,
@@ -192,6 +277,20 @@ class AssetController extends Controller
                 'service_duration_formatted' => $asset->service_duration_formatted,
                 'warranty_status' => $asset->warranty_status,
                 'is_eligible_for_replacement' => $asset->is_eligible_for_replacement,
+                'part_changes'    => $asset->partChanges->map(fn ($pc) => [
+                    'id'                 => $pc->id,
+                    'part_name'          => $pc->part_name,
+                    'old_value'          => $pc->old_value,
+                    'new_value'          => $pc->new_value,
+                    'reason'             => $pc->reason,
+                    'changed_at'         => $pc->changed_at?->format('Y-m-d'),
+                    'performer'          => $pc->performer ? ['id' => $pc->performer->id, 'name' => $pc->performer->name] : null,
+                    'notes'              => $pc->notes,
+                    'incident_report_id' => $pc->incident_report_id,
+                    'incident_report'    => $pc->incidentReport ? ['id' => $pc->incidentReport->id, 'ir_no' => $pc->incidentReport->ir_no] : null,
+                    'recommendation_id'  => $pc->recommendation_id,
+                    'recommendation'     => $pc->recommendation ? ['id' => $pc->recommendation->id, 'doc_no' => $pc->recommendation->doc_no] : null,
+                ]),
                 'movements'       => $asset->movements->map(fn ($m) => [
                     'id'             => $m->id,
                     'type'           => $m->type,
@@ -379,6 +478,14 @@ class AssetController extends Controller
                                 ->map(fn ($e) => ['id' => $e->id, 'name' => $e->full_name])
                                 ->values(),
             'locations'  => Location::select('id', 'name')->orderBy('name')->get(),
+            'code_rules' => \App\Models\AssetCodeRule::where('is_active', true)
+                                ->orderBy('sort_order')->orderBy('prefix_start')
+                                ->get(['id', 'label', 'prefix_start', 'prefix_end', 'category_id'])
+                                ->map(fn ($r) => [
+                                    'id'           => $r->id,
+                                    'name'         => "{$r->label}  ({$r->prefix_start}–{$r->prefix_end})",
+                                    'category_id'  => $r->category_id,
+                                ])->values(),
         ];
     }
 }

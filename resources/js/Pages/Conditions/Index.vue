@@ -102,12 +102,12 @@ const doDelete = () => router.delete(`/conditions/${toDelete.value.id}`, {
 
             <template v-else>
                 <div class="table-wrap">
-                    <table class="table">
+                    <table class="table table-compact">
                         <thead>
                             <tr>
                                 <SortableTh field="sort_order" :sort="filters?.sort" :direction="filters?.direction" url="/conditions" :extra="{ search: search || undefined }" class="w-16">Order</SortableTh>
                                 <SortableTh field="name" :sort="filters?.sort" :direction="filters?.direction" url="/conditions" :extra="{ search: search || undefined }">Name</SortableTh>
-                                <SortableTh field="description" :sort="filters?.sort" :direction="filters?.direction" url="/conditions" :extra="{ search: search || undefined }">Description</SortableTh>
+                                <SortableTh field="description" :sort="filters?.sort" :direction="filters?.direction" url="/conditions" :extra="{ search: search || undefined }" class="hidden md:table-cell">Description</SortableTh>
                                 <th>Badge</th>
                                 <SortableTh field="assets_count" :sort="filters?.sort" :direction="filters?.direction" url="/conditions" :extra="{ search: search || undefined }" align="right">Assets</SortableTh>
                                 <SortableTh field="is_active" :sort="filters?.sort" :direction="filters?.direction" url="/conditions" :extra="{ search: search || undefined }">Status</SortableTh>
@@ -121,7 +121,7 @@ const doDelete = () => router.delete(`/conditions/${toDelete.value.id}`, {
                             <tr v-for="row in conditions.data" :key="row.id">
                                 <td class="cell-muted">{{ row.sort_order }}</td>
                                 <td class="cell-strong">{{ row.name }}</td>
-                                <td class="cell-muted max-w-md truncate">{{ row.description || '—' }}</td>
+                                <td class="cell-muted max-w-md truncate hidden md:table-cell">{{ row.description || '—' }}</td>
                                 <td>
                                     <Badge :tone="row.tone" dot>{{ row.name }}</Badge>
                                 </td>

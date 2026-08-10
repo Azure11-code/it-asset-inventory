@@ -91,13 +91,13 @@ const initials = (name) => (name || '?').split(' ').filter(Boolean).slice(0, 2).
 
             <template v-else>
                 <div class="table-wrap">
-                    <table class="table">
+                    <table class="table table-compact">
                         <thead>
                             <tr>
                                 <SortableTh field="name" :sort="filters?.sort" :direction="filters?.direction" url="/users" :extra="{ search: search || undefined }">User</SortableTh>
-                                <SortableTh field="username" :sort="filters?.sort" :direction="filters?.direction" url="/users" :extra="{ search: search || undefined }">Username</SortableTh>
-                                <SortableTh field="email" :sort="filters?.sort" :direction="filters?.direction" url="/users" :extra="{ search: search || undefined }">Email</SortableTh>
-                                <SortableTh field="created_at" :sort="filters?.sort" :direction="filters?.direction" url="/users" :extra="{ search: search || undefined }">Joined</SortableTh>
+                                <SortableTh field="username" :sort="filters?.sort" :direction="filters?.direction" url="/users" :extra="{ search: search || undefined }" class="hidden md:table-cell">Username</SortableTh>
+                                <SortableTh field="email" :sort="filters?.sort" :direction="filters?.direction" url="/users" :extra="{ search: search || undefined }" class="hidden sm:table-cell">Email</SortableTh>
+                                <SortableTh field="created_at" :sort="filters?.sort" :direction="filters?.direction" url="/users" :extra="{ search: search || undefined }" class="hidden lg:table-cell">Joined</SortableTh>
                                 <th class="text-right">Actions</th>
                             </tr>
                         </thead>
@@ -107,19 +107,20 @@ const initials = (name) => (name || '?').split(' ').filter(Boolean).slice(0, 2).
                             </tr>
                             <tr v-for="row in users.data" :key="row.id">
                                 <td>
-                                    <div class="flex items-center gap-3">
-                                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-xs font-semibold text-white">
+                                    <div class="flex items-center gap-2 sm:gap-3">
+                                        <div class="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-[10px] sm:text-xs font-semibold text-white">
                                             {{ initials(row.name) }}
                                         </div>
                                         <div class="min-w-0">
-                                            <div class="cell-strong">{{ row.name }}</div>
+                                            <div class="cell-strong truncate">{{ row.name }}</div>
+                                            <div class="sm:hidden text-[11px] text-slate-500 truncate">{{ row.email || row.username || '' }}</div>
                                             <Badge v-if="row.is_current" tone="brand" class="mt-0.5">you</Badge>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="cell-muted">{{ row.username || '—' }}</td>
-                                <td class="cell-muted">{{ row.email || '—' }}</td>
-                                <td class="cell-muted">{{ row.created_at }}</td>
+                                <td class="cell-muted hidden md:table-cell">{{ row.username || '—' }}</td>
+                                <td class="cell-muted hidden sm:table-cell">{{ row.email || '—' }}</td>
+                                <td class="cell-muted hidden lg:table-cell">{{ row.created_at }}</td>
                                 <td class="cell-right">
                                     <div class="inline-flex items-center gap-1">
                                         <button class="btn-ghost" @click="openEdit(row)"><PencilSquareIcon class="h-4 w-4" /></button>

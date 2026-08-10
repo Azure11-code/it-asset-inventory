@@ -19,6 +19,7 @@
         "@inertiajs/vue3": "^1.0.0",
         "apexcharts": "^3.54.1",
         "html2canvas": "^1.4.1",
+        "qr-scanner": "^1.4.2",
         "qrcode.vue": "^3.9.1",
         "three": "^0.184.0",
         "vue": "^3.4.0",
