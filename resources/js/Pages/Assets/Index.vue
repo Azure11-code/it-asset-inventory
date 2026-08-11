@@ -126,7 +126,7 @@ const exportUrl = computed(() => {
             <div class="grid gap-2 border-b border-slate-100 p-3 sm:grid-cols-[minmax(220px,1fr)_repeat(4,minmax(0,10rem))] sm:items-center">
                 <div class="relative">
                     <MagnifyingGlassIcon class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input v-model="search" type="search" placeholder="Search tag, serial, model..." class="input pl-9" />
+                    <input v-model="search" type="search" placeholder="Search tag, serial, model, holder name..." class="input pl-9" />
                 </div>
                 <Combobox v-model="status"   :options="STATUS_OPTIONS"    value-key="value" label-key="label" placeholder="All Status"    null-label="All Status" />
                 <Combobox v-model="category" :options="lookups.categories"                                    placeholder="All Categories" null-label="All Categories" />
