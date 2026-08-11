@@ -29,7 +29,7 @@ const refresh = () => {
         router.get('/permits', {
             search: search.value || undefined,
             status: status.value || undefined,
-        }, { preserveState: true, replace: true });
+        }, { preserveState: true, preserveScroll: true, replace: true, only: ['permits', 'filters'] });
     }, 300);
 };
 watch([search, status], refresh);

@@ -274,6 +274,7 @@ Route::middleware('auth')->group(function () {
         ->parameters(['asset-code-rules' => 'rule']);
     Route::get('asset-code-rules/{rule}/next', [AssetCodeRuleController::class, 'next'])->name('asset-code-rules.next');
     Route::resource('employees',   EmployeeController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::get('employees/{employee}/assets', [EmployeeController::class, 'assets'])->name('employees.assets');
     Route::resource('users',       UserController::class)->only(['index', 'store', 'update', 'destroy']);
 
     Route::resource('permits',          PermitController::class)->parameters(['permits' => 'permit']);

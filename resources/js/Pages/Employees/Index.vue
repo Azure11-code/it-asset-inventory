@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, nextTick } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
@@ -11,7 +11,8 @@ import EmptyState from '@/Components/EmptyState.vue';
 import Badge from '@/Components/Badge.vue';
 import SortableTh from '@/Components/SortableTh.vue';
 import Combobox from '@/Components/Combobox.vue';
-import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, UsersIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, UsersIcon, CpuChipIcon, ArrowTopRightOnSquareIcon } from '@heroicons/vue/24/outline';
+import { Link } from '@inertiajs/vue3';
 
 const EMPLOYEE_STATUSES = [
     { value: 'active',   label: 'Active' },
@@ -30,15 +31,36 @@ const search = ref(props.filters?.search ?? '');
 const departmentFilter = ref(props.filters?.department_id ?? '');
 const statusFilter = ref(props.filters?.status ?? '');
 
+const searchInput = ref(null);
 let timer = null;
 const refresh = () => {
     clearTimeout(timer);
     timer = setTimeout(() => {
+        const el = searchInput.value;
+        const wasFocused = el && document.activeElement === el;
+        const caret = wasFocused ? el.selectionStart : null;
         router.get('/employees', {
             search: search.value || undefined,
             department_id: departmentFilter.value || undefined,
             status: statusFilter.value || undefined,
-        }, { preserveState: true, replace: true });
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ['employees', 'filters'],
+            onSuccess: () => {
+                if (wasFocused) {
+                    nextTick(() => {
+                        const input = searchInput.value;
+                        if (!input) return;
+                        input.focus();
+                        if (caret !== null) {
+                            try { input.setSelectionRange(caret, caret); } catch (e) { /* type=search may not support */ }
+                        }
+                    });
+                }
+            },
+        });
     }, 300);
 };
 watch([search, departmentFilter, statusFilter], refresh);
@@ -84,6 +106,34 @@ const doDelete = () => router.delete(`/employees/${toDelete.value.id}`, {
     preserveScroll: true,
 });
 
+// View held-assets modal
+const showAssetsModal = ref(false);
+const viewingEmployee = ref(null);
+const assetsList = ref([]);
+const assetsLoading = ref(false);
+const openAssets = async (row) => {
+    viewingEmployee.value = row;
+    showAssetsModal.value = true;
+    assetsLoading.value = true;
+    assetsList.value = [];
+    try {
+        const res = await fetch(`/employees/${row.id}/assets`, { headers: { Accept: 'application/json' } });
+        const data = await res.json();
+        assetsList.value = data.assets || [];
+    } finally {
+        assetsLoading.value = false;
+    }
+};
+
+const assetStatusTone = {
+    in_stock:   'sky',
+    assigned:   'brand',
+    for_repair: 'amber',
+    defective:  'rose',
+    retired:    'slate',
+    replaced:   'slate',
+};
+
 const statusTone = {
     active:   'emerald',
     inactive: 'slate',
@@ -109,7 +159,7 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
             <div class="grid gap-2 border-b border-slate-100 p-3 sm:grid-cols-[minmax(220px,1fr)_repeat(2,minmax(0,12rem))] sm:items-center">
                 <div class="relative">
                     <MagnifyingGlassIcon class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input v-model="search" type="search" placeholder="Search name, employee #, email..." class="input pl-9" />
+                    <input ref="searchInput" v-model="search" type="search" placeholder="Search name, employee #, email..." class="input pl-9" />
                 </div>
                 <Combobox v-model="departmentFilter" :options="departments" placeholder="All Departments" null-label="All Departments" />
                 <Combobox v-model="statusFilter" :options="EMPLOYEE_STATUSES" value-key="value" label-key="label" placeholder="All Status" null-label="All Status" />
@@ -150,8 +200,11 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
                                             {{ initials(row) }}
                                         </div>
                                         <div class="min-w-0">
-                                            <div class="cell-strong truncate">
-                                                {{ row.last_name }}, {{ row.first_name }}{{ row.middle_name ? ' ' + row.middle_name.charAt(0) + '.' : '' }}
+                                            <div class="cell-strong truncate flex items-center gap-2">
+                                                <span>{{ row.last_name }}, {{ row.first_name }}{{ row.middle_name ? ' ' + row.middle_name.charAt(0) + '.' : '' }}</span>
+                                                <Badge v-if="row.held_assets_count > 0" tone="brand" class="!py-0 !px-1.5 text-[10px]">
+                                                    {{ row.held_assets_count }} {{ row.held_assets_count === 1 ? 'asset' : 'assets' }}
+                                                </Badge>
                                             </div>
                                             <div class="text-[11px] text-slate-500 truncate">{{ row.email || row.employee_no }}</div>
                                             <!-- Fold Position + Department into the primary cell on mobile -->
@@ -167,8 +220,9 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
                                 <td><Badge :tone="statusTone[row.status]" dot>{{ row.status }}</Badge></td>
                                 <td class="cell-right">
                                     <div class="inline-flex items-center gap-1">
-                                        <button class="btn-ghost" @click="openEdit(row)"><PencilSquareIcon class="h-4 w-4" /></button>
-                                        <button class="btn-ghost-danger" @click="confirmDelete(row)"><TrashIcon class="h-4 w-4" /></button>
+                                        <button class="btn-ghost" title="View held assets" @click="openAssets(row)"><CpuChipIcon class="h-4 w-4" /></button>
+                                        <button class="btn-ghost" title="Edit" @click="openEdit(row)"><PencilSquareIcon class="h-4 w-4" /></button>
+                                        <button class="btn-ghost-danger" title="Delete" @click="confirmDelete(row)"><TrashIcon class="h-4 w-4" /></button>
                                     </div>
                                 </td>
                             </tr>
@@ -233,5 +287,49 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
             @close="showDelete = false"
             @confirm="doDelete"
         />
+
+        <Modal :show="showAssetsModal" max-width="3xl" :title="viewingEmployee ? `Assets held by ${viewingEmployee.first_name} ${viewingEmployee.last_name}` : 'Held Assets'" @close="showAssetsModal = false">
+            <div class="p-5">
+                <div v-if="assetsLoading" class="py-8 text-center text-sm text-slate-500">Loading...</div>
+                <div v-else-if="assetsList.length === 0" class="py-8 text-center text-sm text-slate-500">
+                    <CpuChipIcon class="mx-auto mb-2 h-8 w-8 text-slate-300" />
+                    No assets currently held by this employee.
+                </div>
+                <div v-else class="table-wrap">
+                    <table class="table table-compact">
+                        <thead>
+                            <tr>
+                                <th>Asset Tag</th>
+                                <th class="hidden sm:table-cell">Category</th>
+                                <th class="hidden md:table-cell">Brand / Model</th>
+                                <th class="hidden lg:table-cell">Serial</th>
+                                <th>Status</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="a in assetsList" :key="a.id">
+                                <td class="cell-strong">{{ a.asset_tag }}</td>
+                                <td class="hidden sm:table-cell">{{ a.category || '—' }}</td>
+                                <td class="hidden md:table-cell">
+                                    <div>{{ a.brand || '—' }}</div>
+                                    <div class="text-[11px] text-slate-500">{{ a.model || '' }}</div>
+                                </td>
+                                <td class="hidden lg:table-cell">{{ a.serial_number || '—' }}</td>
+                                <td><Badge :tone="assetStatusTone[a.current_status]" dot>{{ a.current_status }}</Badge></td>
+                                <td class="cell-right">
+                                    <Link :href="`/assets/${a.id}`" class="btn-ghost" title="Open asset">
+                                        <ArrowTopRightOnSquareIcon class="h-4 w-4" />
+                                    </Link>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="flex justify-end border-t border-slate-100 bg-slate-50 px-5 py-3">
+                <button type="button" class="btn-secondary" @click="showAssetsModal = false">Close</button>
+            </div>
+        </Modal>
     </AppLayout>
 </template>

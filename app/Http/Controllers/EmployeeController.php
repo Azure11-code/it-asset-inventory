@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Location;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -30,6 +31,7 @@ class EmployeeController extends Controller
             ->leftJoin('departments', 'employees.department_id', '=', 'departments.id')
             ->leftJoin('locations', 'employees.location_id', '=', 'locations.id')
             ->with(['department:id,name', 'location:id,name'])
+            ->withCount('heldAssets')
             ->when($request->search, fn ($q, $search) =>
                 $q->where(fn ($w) => $w->where('first_name', 'like', "%{$search}%")
                                        ->orWhere('last_name', 'like', "%{$search}%")
@@ -73,6 +75,34 @@ class EmployeeController extends Controller
         $employee->delete();
 
         return back()->with('success', 'Employee deleted.');
+    }
+
+    public function assets(Employee $employee): JsonResponse
+    {
+        $assets = $employee->heldAssets()
+            ->with(['brand:id,name', 'category:id,name', 'currentLocation:id,name'])
+            ->orderBy('asset_tag')
+            ->get()
+            ->map(fn ($a) => [
+                'id'              => $a->id,
+                'asset_tag'       => $a->asset_tag,
+                'category'        => $a->category?->name,
+                'brand'           => $a->brand?->name,
+                'model'           => $a->model,
+                'serial_number'   => $a->serial_number,
+                'current_status'  => $a->current_status,
+                'current_location'=> $a->currentLocation?->name,
+                'deployment_date' => $a->deployment_date?->format('Y-m-d'),
+            ]);
+
+        return response()->json([
+            'employee' => [
+                'id'        => $employee->id,
+                'full_name' => $employee->full_name,
+                'employee_no' => $employee->employee_no,
+            ],
+            'assets' => $assets,
+        ]);
     }
 
     private function validateData(Request $request, ?Employee $employee = null): array

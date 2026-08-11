@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, nextTick } from 'vue';
 import { Link, router, useForm, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
@@ -33,17 +33,38 @@ const category = ref(props.filters?.category_id ?? '');
 const brand = ref(props.filters?.brand_id ?? '');
 const warranty = ref(props.filters?.warranty ?? '');
 
+const searchInput = ref(null);
 let timer = null;
 const refresh = () => {
     clearTimeout(timer);
     timer = setTimeout(() => {
+        const el = searchInput.value;
+        const wasFocused = el && document.activeElement === el;
+        const caret = wasFocused ? el.selectionStart : null;
         router.get('/assets', {
             search: search.value || undefined,
             status: status.value || undefined,
             category_id: category.value || undefined,
             brand_id: brand.value || undefined,
             warranty: warranty.value || undefined,
-        }, { preserveState: true, replace: true });
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ['assets', 'filters'],
+            onSuccess: () => {
+                if (wasFocused) {
+                    nextTick(() => {
+                        const input = searchInput.value;
+                        if (!input) return;
+                        input.focus();
+                        if (caret !== null) {
+                            try { input.setSelectionRange(caret, caret); } catch (e) { /* type=search may not support */ }
+                        }
+                    });
+                }
+            },
+        });
     }, 300);
 };
 watch([search, status, category, brand, warranty], refresh);
@@ -126,7 +147,7 @@ const exportUrl = computed(() => {
             <div class="grid gap-2 border-b border-slate-100 p-3 sm:grid-cols-[minmax(220px,1fr)_repeat(4,minmax(0,10rem))] sm:items-center">
                 <div class="relative">
                     <MagnifyingGlassIcon class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input v-model="search" type="search" placeholder="Search tag, serial, model, holder name..." class="input pl-9" />
+                    <input ref="searchInput" v-model="search" type="search" placeholder="Search tag, serial, model, holder name..." class="input pl-9" />
                 </div>
                 <Combobox v-model="status"   :options="STATUS_OPTIONS"    value-key="value" label-key="label" placeholder="All Status"    null-label="All Status" />
                 <Combobox v-model="category" :options="lookups.categories"                                    placeholder="All Categories" null-label="All Categories" />

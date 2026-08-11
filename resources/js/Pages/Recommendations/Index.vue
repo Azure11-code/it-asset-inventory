@@ -28,7 +28,7 @@ watch([search, status], () => {
         router.get('/recommendations', {
             search: search.value || undefined,
             status: status.value || undefined,
-        }, { preserveState: true, replace: true });
+        }, { preserveState: true, preserveScroll: true, replace: true, only: ['recommendations', 'filters'] });
     }, 300);
 });
 

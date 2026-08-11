@@ -19,7 +19,7 @@ let searchTimer = null;
 watch(search, (val) => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
-        router.get('/users', { search: val || undefined }, { preserveState: true, replace: true });
+        router.get('/users', { search: val || undefined }, { preserveState: true, preserveScroll: true, replace: true, only: ['users', 'filters'] });
     }, 300);
 });
 
