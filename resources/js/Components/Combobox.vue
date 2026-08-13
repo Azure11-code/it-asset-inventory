@@ -154,15 +154,33 @@ const menuStyle = ref({});
 const updateMenuPosition = () => {
     if (!rootEl.value) return;
     const r = rootEl.value.getBoundingClientRect();
-    const menuMax = 256; // matches max-height
+    const preferredMax = 256;
     const gap = 4;
-    const fitsBelow = window.innerHeight - r.bottom > menuMax + 16;
-    const top = fitsBelow ? r.bottom + gap : Math.max(8, r.top - gap - menuMax);
+    const safeMargin = 8;
+    const roomBelow = window.innerHeight - r.bottom - safeMargin;
+    const roomAbove = r.top - safeMargin;
+
+    let top, maxHeight;
+    // Prefer opening downward when there's at least ~180px of room
+    if (roomBelow >= 180) {
+        top = r.bottom + gap;
+        maxHeight = Math.min(preferredMax, roomBelow - gap);
+    } else if (roomAbove > roomBelow) {
+        // Open upward — anchor bottom of menu just above the input
+        maxHeight = Math.min(preferredMax, roomAbove - gap);
+        top = r.top - gap - maxHeight;
+    } else {
+        // Not much room either way — pick whichever is bigger, keep some height
+        top = r.bottom + gap;
+        maxHeight = Math.max(120, roomBelow - gap);
+    }
+
     menuStyle.value = {
         position: 'fixed',
         left: `${r.left}px`,
         top: `${top}px`,
         width: `${r.width}px`,
+        maxHeight: `${maxHeight}px`,
         zIndex: 9999,
     };
 };
@@ -287,8 +305,9 @@ onBeforeUnmount(() => {
 .combobox__clear:hover { background: rgb(241 245 249); color: rgb(15 23 42); }
 
 .combobox__menu {
-    position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 0.25rem);
-    max-height: 16rem; overflow-y: auto;
+    /* Position + size come from inline styles via updateMenuPosition().
+       Teleported to body so we intentionally rely on inline positioning. */
+    overflow-y: auto;
     background: #fff;
     border: 1px solid rgb(226 232 240);
     border-radius: 0.5rem;

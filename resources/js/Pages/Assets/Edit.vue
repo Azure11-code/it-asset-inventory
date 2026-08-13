@@ -17,6 +17,7 @@ const form = useForm({
     purchase_date: props.asset.purchase_date ?? '',
     deployment_date: props.asset.deployment_date ?? '',
     purchase_cost: props.asset.purchase_cost ?? '',
+    vendor: props.asset.vendor ?? '',
     expected_lifespan_years: props.asset.expected_lifespan_years ?? 5,
     warranty_until: props.asset.warranty_until ?? '',
     condition_id: props.asset.condition_id ?? '',

@@ -30,7 +30,7 @@ watch(search, (val) => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
         router.get('/conditions', { search: val || undefined }, { preserveState: true, preserveScroll: true, replace: true, only: ['conditions', 'filters'] });
-    }, 300);
+    }, 1000);
 });
 
 const showModal = ref(false);

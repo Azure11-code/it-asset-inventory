@@ -11,7 +11,7 @@ import EmptyState from '@/Components/EmptyState.vue';
 import Badge from '@/Components/Badge.vue';
 import SortableTh from '@/Components/SortableTh.vue';
 import Combobox from '@/Components/Combobox.vue';
-import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, UsersIcon, CpuChipIcon, ArrowTopRightOnSquareIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, UsersIcon, CpuChipIcon, ArrowTopRightOnSquareIcon, DocumentTextIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 import { Link } from '@inertiajs/vue3';
 
 const EMPLOYEE_STATUSES = [
@@ -61,7 +61,7 @@ const refresh = () => {
                 }
             },
         });
-    }, 300);
+    }, 1000);
 };
 watch([search, departmentFilter, statusFilter], refresh);
 
@@ -220,6 +220,11 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
                                 <td><Badge :tone="statusTone[row.status]" dot>{{ row.status }}</Badge></td>
                                 <td class="cell-right">
                                     <div class="inline-flex items-center gap-1">
+                                        <a v-if="row.held_assets_count > 0"
+                                           :href="`/employees/${row.id}/accountability.docx`"
+                                           class="btn-ghost" title="Download Accountability Form (.docx)">
+                                            <DocumentTextIcon class="h-4 w-4" />
+                                        </a>
                                         <button class="btn-ghost" title="View held assets" @click="openAssets(row)"><CpuChipIcon class="h-4 w-4" /></button>
                                         <button class="btn-ghost" title="Edit" @click="openEdit(row)"><PencilSquareIcon class="h-4 w-4" /></button>
                                         <button class="btn-ghost-danger" title="Delete" @click="confirmDelete(row)"><TrashIcon class="h-4 w-4" /></button>
@@ -318,16 +323,28 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
                                 <td class="hidden lg:table-cell">{{ a.serial_number || '—' }}</td>
                                 <td><Badge :tone="assetStatusTone[a.current_status]" dot>{{ a.current_status }}</Badge></td>
                                 <td class="cell-right">
-                                    <Link :href="`/assets/${a.id}`" class="btn-ghost" title="Open asset">
-                                        <ArrowTopRightOnSquareIcon class="h-4 w-4" />
-                                    </Link>
+                                    <div class="inline-flex items-center gap-1">
+                                        <a :href="`/accountability/${viewingEmployee.id}/download?asset_id=${a.id}`"
+                                           class="btn-ghost" title="Download Accountability Form for this device only">
+                                            <ArrowDownTrayIcon class="h-4 w-4" />
+                                        </a>
+                                        <Link :href="`/assets/${a.id}`" class="btn-ghost" title="Open asset">
+                                            <ArrowTopRightOnSquareIcon class="h-4 w-4" />
+                                        </Link>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
-            <div class="flex justify-end border-t border-slate-100 bg-slate-50 px-5 py-3">
+            <div class="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3">
+                <a v-if="viewingEmployee && assetsList.length > 0"
+                   :href="`/employees/${viewingEmployee.id}/accountability.docx`"
+                   class="btn-secondary">
+                    <DocumentTextIcon class="h-4 w-4" /> Accountability Form
+                </a>
+                <span v-else></span>
                 <button type="button" class="btn-secondary" @click="showAssetsModal = false">Close</button>
             </div>
         </Modal>

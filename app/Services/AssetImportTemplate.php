@@ -93,6 +93,7 @@ class AssetImportTemplate
             '2026-01-15',                         // Purchase Date
             '2026-01-20',                         // Deployment Date
             45000,                                // Purchase Cost
+            'Wizmaster Computer Sales & Service', // Vendor
             5,                                    // Lifespan (Years)
             '',                                   // Warranty Until (auto: purchase + lifespan)
             $firstCondition ?: 'New',             // Condition

@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Location;
+use App\Services\AccountabilityDocxGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EmployeeController extends Controller
 {
@@ -75,6 +77,11 @@ class EmployeeController extends Controller
         $employee->delete();
 
         return back()->with('success', 'Employee deleted.');
+    }
+
+    public function accountability(Employee $employee, AccountabilityDocxGenerator $generator): StreamedResponse
+    {
+        return $generator->generate($employee);
     }
 
     public function assets(Employee $employee): JsonResponse

@@ -193,6 +193,9 @@ watch(selectedRuleId, (id) => applyRule(id));
                 <FormField label="Purchase Cost" :error="form.errors.purchase_cost">
                     <input v-model.number="form.purchase_cost" type="number" step="0.01" min="0" class="input" />
                 </FormField>
+                <FormField label="Vendor" :error="form.errors.vendor">
+                    <input v-model="form.vendor" type="text" class="input" placeholder="e.g. Wizmaster Computer Sales & Service" />
+                </FormField>
                 <FormField label="Lifespan (years)" :error="form.errors.expected_lifespan_years" required>
                     <input v-model.number="form.expected_lifespan_years" type="number" min="1" max="30" class="input" />
                 </FormField>

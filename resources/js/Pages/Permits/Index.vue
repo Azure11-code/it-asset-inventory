@@ -30,7 +30,7 @@ const refresh = () => {
             search: search.value || undefined,
             status: status.value || undefined,
         }, { preserveState: true, preserveScroll: true, replace: true, only: ['permits', 'filters'] });
-    }, 300);
+    }, 1000);
 };
 watch([search, status], refresh);
 

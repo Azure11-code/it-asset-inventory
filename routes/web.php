@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\AccountabilityController;
 use App\Http\Controllers\AssetCodeRuleController;
+use App\Http\Controllers\SignatoryController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AssetMovementController;
 use App\Http\Controllers\AssetPartChangeController;
@@ -84,21 +86,20 @@ Route::middleware('auth')->group(function () {
         // ── Maintained Asset: everything except retired/replaced ──
         $maintainedCount = Asset::whereNotIn('current_status', ['retired', 'replaced'])->count();
 
-        // ── Bitdefender status from JSON specifications (No / Yes / Excluded) ──
-        // Load only assets that could have a Bitdefender line; compute in PHP because JSON queries
-        // over an array-of-objects are messy in MySQL. Volume is modest (< a few thousand rows).
-        $bitdefender = ['No' => 0, 'Yes' => 0, 'Excluded' => 0, '—' => 0];
-        Asset::select('id', 'specifications')->chunk(500, function ($chunk) use (&$bitdefender) {
+        // ── Endpoint protection status from JSON specifications (No / Yes / Excluded) ──
+        // Any named AV product counts as installed. Kept generic — not tied to one vendor.
+        $endpointProtection = ['No' => 0, 'Yes' => 0, 'Excluded' => 0, '—' => 0];
+        Asset::select('id', 'specifications')->chunk(500, function ($chunk) use (&$endpointProtection) {
             foreach ($chunk as $a) {
                 $val = collect($a->specifications ?? [])
                     ->first(fn ($s) => is_array($s) && strcasecmp($s['key'] ?? '', 'Antivirus') === 0);
                 $raw = is_array($val) ? trim((string) ($val['value'] ?? '')) : '';
-                if ($raw === '') { $bitdefender['—']++; continue; }
+                if ($raw === '') { $endpointProtection['—']++; continue; }
                 $lc = strtolower($raw);
-                if ($lc === 'yes' || $lc === 'y' || str_contains($lc, 'bitdefender')) $bitdefender['Yes']++;
-                elseif ($lc === 'excluded') $bitdefender['Excluded']++;
-                elseif ($lc === 'no' || $lc === 'n' || $lc === 'none' || $lc === '-') $bitdefender['No']++;
-                else $bitdefender['Yes']++; // any other named product counts as installed
+                if ($lc === 'yes' || $lc === 'y') $endpointProtection['Yes']++;
+                elseif ($lc === 'excluded') $endpointProtection['Excluded']++;
+                elseif ($lc === 'no' || $lc === 'n' || $lc === 'none' || $lc === '-') $endpointProtection['No']++;
+                else $endpointProtection['Yes']++; // any other named product counts as installed
             }
         });
 
@@ -160,7 +161,7 @@ Route::middleware('auth')->group(function () {
                 'assigned'       => (int) ($byStatus['assigned'] ?? 0),
                 'in_stock'       => (int) ($byStatus['in_stock'] ?? 0),
                 'employees'      => Employee::where('status', 'active')->count(),
-                'bitdefender'    => $bitdefender,
+                'endpoint_protection' => $endpointProtection,
             ],
             'recent_movements' => AssetMovement::with([
                     'asset:id,asset_tag',
@@ -275,11 +276,16 @@ Route::middleware('auth')->group(function () {
     Route::get('asset-code-rules/{rule}/next', [AssetCodeRuleController::class, 'next'])->name('asset-code-rules.next');
     Route::resource('employees',   EmployeeController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::get('employees/{employee}/assets', [EmployeeController::class, 'assets'])->name('employees.assets');
+    Route::get('employees/{employee}/accountability.docx', [EmployeeController::class, 'accountability'])->name('employees.accountability');
+    Route::resource('signatories', SignatoryController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('users',       UserController::class)->only(['index', 'store', 'update', 'destroy']);
 
     Route::resource('permits',          PermitController::class)->parameters(['permits' => 'permit']);
     Route::resource('incidents',        IncidentReportController::class)->parameters(['incidents' => 'incident']);
     Route::resource('recommendations',  RecommendationController::class);
+
+    Route::get('accountability',                            [AccountabilityController::class, 'index'])->name('accountability.index');
+    Route::get('accountability/{employee}/download',        [AccountabilityController::class, 'download'])->name('accountability.download');
 
     Route::get('permits/{permit}/docx',                  [PermitController::class, 'docx'])->name('permits.docx');
     Route::get('incidents/{incident}/docx',              [IncidentReportController::class, 'docx'])->name('incidents.docx');

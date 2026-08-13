@@ -23,7 +23,7 @@ watch(search, (val) => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
         router.get('/locations', { search: val || undefined }, { preserveState: true, preserveScroll: true, replace: true, only: ['locations', 'filters'] });
-    }, 300);
+    }, 1000);
 });
 
 const showModal = ref(false);

@@ -29,7 +29,7 @@ watch([search, status], () => {
             search: search.value || undefined,
             status: status.value || undefined,
         }, { preserveState: true, preserveScroll: true, replace: true, only: ['reports', 'filters'] });
-    }, 300);
+    }, 1000);
 });
 
 const hasFilters = computed(() => search.value || status.value);

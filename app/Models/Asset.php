@@ -17,7 +17,7 @@ class Asset extends Model
     protected $fillable = [
         'asset_tag', 'serial_number', 'model', 'description', 'specifications',
         'brand_id', 'category_id', 'condition_id',
-        'purchase_date', 'deployment_date', 'purchase_cost',
+        'purchase_date', 'deployment_date', 'purchase_cost', 'vendor',
         'expected_lifespan_years', 'warranty_until',
         'current_status',
         'current_holder_id', 'current_location_id', 'department_id',

@@ -15,7 +15,7 @@ import {
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
-    stats: { type: Object, default: () => ({ total_assets: 0, maintained: 0, assigned: 0, in_stock: 0, employees: 0, bitdefender: {} }) },
+    stats: { type: Object, default: () => ({ total_assets: 0, maintained: 0, assigned: 0, in_stock: 0, employees: 0, endpoint_protection: {} }) },
     recent_movements: { type: Array, default: () => [] },
     charts: { type: Object, default: () => ({ movements: [], by_category: [], by_department: [], cat_dept: { departments: [], rows: [] }, loc_cat: { categories: [], rows: [] }, by_status: {}, warranty: {} }) },
 });
@@ -37,9 +37,9 @@ const toneBg = {
     rose:    'bg-rose-50    text-rose-700',
 };
 
-// ── Bitdefender breakdown ──
-const bitdefenderStats = computed(() => {
-    const raw = props.stats.bitdefender || {};
+// ── Endpoint protection breakdown ──
+const endpointStats = computed(() => {
+    const raw = props.stats.endpoint_protection || {};
     const total = (raw.Yes || 0) + (raw.No || 0) + (raw.Excluded || 0);
     return [
         { label: 'Protected (Yes)', count: raw.Yes || 0,      tone: 'emerald' },
@@ -264,23 +264,23 @@ const warrantyTiles = computed(() => [
             </div>
         </div>
 
-        <!-- Bitdefender + By-Department row -->
+        <!-- Endpoint protection + By-Department row -->
         <div class="mt-4 grid gap-4 lg:grid-cols-3">
-            <section id="section-bitdefender" class="card">
+            <section id="section-endpoint" class="card">
                 <header class="card-header py-2.5 px-4">
                     <div>
-                        <h2 class="card-title text-sm">Bitdefender Coverage</h2>
-                        <p class="card-subtitle text-[11px]">Endpoint antivirus status across the fleet.</p>
+                        <h2 class="card-title text-sm">Endpoint Protection Coverage</h2>
+                        <p class="card-subtitle text-[11px]">Antivirus status across the fleet.</p>
                     </div>
                     <div class="flex items-center gap-1">
-                        <button type="button" class="btn-ghost no-print" @click="printSection('section-bitdefender')" title="Print section">
+                        <button type="button" class="btn-ghost no-print" @click="printSection('section-endpoint')" title="Print section">
                             <PrinterIcon class="h-4 w-4" />
                         </button>
                         <ShieldExclamationIcon class="h-5 w-5 text-slate-400" />
                     </div>
                 </header>
                 <ul class="divide-y divide-slate-100">
-                    <li v-for="s in bitdefenderStats" :key="s.label" class="flex items-center justify-between px-4 py-2.5">
+                    <li v-for="s in endpointStats" :key="s.label" class="flex items-center justify-between px-4 py-2.5">
                         <div class="flex items-center gap-2">
                             <span :class="['h-2.5 w-2.5 rounded-full',
                                 s.tone === 'emerald' ? 'bg-emerald-500' :

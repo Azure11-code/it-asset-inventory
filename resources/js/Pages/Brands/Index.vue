@@ -20,7 +20,7 @@ watch(search, (val) => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
         router.get('/brands', { search: val || undefined }, { preserveState: true, preserveScroll: true, replace: true, only: ['brands', 'filters'] });
-    }, 300);
+    }, 1000);
 });
 
 const showModal = ref(false);

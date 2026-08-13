@@ -23,6 +23,7 @@ import {
     DocumentTextIcon,
     QrCodeIcon,
     HashtagIcon,
+    UserGroupIcon,
 } from '@heroicons/vue/24/outline';
 import OnboardingTour from '@/Components/OnboardingTour.vue';
 
@@ -47,9 +48,10 @@ const primaryNav = computed(() => [
 ]);
 
 const documentsNav = computed(() => [
-    { name: 'Permits',         href: '/permits',         icon: ClipboardDocumentCheckIcon, count: formatCount(counts.value.permits),         tour: 'nav-permits' },
-    { name: 'Incident Reports', href: '/incidents',      icon: ExclamationTriangleIcon,    count: formatCount(counts.value.incidents) },
-    { name: 'Recommendations', href: '/recommendations', icon: DocumentTextIcon,           count: formatCount(counts.value.recommendations) },
+    { name: 'Accountability',   href: '/accountability',  icon: ShieldCheckIcon,            count: formatCount(counts.value.accountability) },
+    { name: 'Permits',          href: '/permits',         icon: ClipboardDocumentCheckIcon, count: formatCount(counts.value.permits),         tour: 'nav-permits' },
+    { name: 'Incident Reports', href: '/incidents',       icon: ExclamationTriangleIcon,    count: formatCount(counts.value.incidents) },
+    { name: 'Recommendations',  href: '/recommendations', icon: DocumentTextIcon,           count: formatCount(counts.value.recommendations) },
 ]);
 
 const masterNav = computed(() => [
@@ -59,6 +61,7 @@ const masterNav = computed(() => [
     { name: 'Conditions',       href: '/conditions',       icon: SparklesIcon,        count: formatCount(counts.value.conditions) },
     { name: 'Departments',      href: '/departments',      icon: BuildingOffice2Icon, count: formatCount(counts.value.departments) },
     { name: 'Locations',        href: '/locations',        icon: MapPinIcon,          count: formatCount(counts.value.locations) },
+    { name: 'Signatories',      href: '/signatories',      icon: UserGroupIcon,       count: formatCount(counts.value.signatories) },
 ]);
 
 const currentPath = computed(() => page.url);

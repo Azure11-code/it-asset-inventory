@@ -65,7 +65,7 @@ const refresh = () => {
                 }
             },
         });
-    }, 300);
+    }, 1000);
 };
 watch([search, status, category, brand, warranty], refresh);
 
