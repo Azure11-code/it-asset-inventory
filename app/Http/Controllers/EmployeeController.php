@@ -138,7 +138,9 @@ class EmployeeController extends Controller implements HasMiddleware
             'department_id' => ['nullable', 'exists:departments,id'],
             'location_id'   => ['nullable', 'exists:locations,id'],
             'date_hired'    => ['nullable', 'date'],
+            'date_resigned' => ['nullable', 'date', 'after_or_equal:date_hired'],
             'status'        => ['required', Rule::in(['active', 'inactive', 'resigned'])],
+            'notes'         => ['nullable', 'string', 'max:2000'],
         ]);
     }
 }

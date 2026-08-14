@@ -16,11 +16,12 @@ class Employee extends Model
         'employee_no', 'first_name', 'middle_name', 'last_name',
         'email', 'contact_no', 'position',
         'department_id', 'location_id',
-        'date_hired', 'status',
+        'date_hired', 'date_resigned', 'status', 'notes',
     ];
 
     protected $casts = [
-        'date_hired' => 'date',
+        'date_hired'    => 'date',
+        'date_resigned' => 'date',
     ];
 
     protected function fullName(): Attribute

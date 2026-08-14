@@ -76,7 +76,9 @@ const editing = ref(null);
 const form = useForm({
     employee_no: '', first_name: '', middle_name: '', last_name: '',
     email: '', contact_no: '', position: '',
-    department_id: '', location_id: '', date_hired: '', status: 'active',
+    department_id: '', location_id: '',
+    date_hired: '', date_resigned: '', status: 'active',
+    notes: '',
 });
 
 const openCreate = () => { editing.value = null; form.reset(); form.status = 'active'; showModal.value = true; };
@@ -92,7 +94,9 @@ const openEdit = (row) => {
     form.department_id = row.department_id ?? '';
     form.location_id = row.location_id ?? '';
     form.date_hired = row.date_hired ? String(row.date_hired).substring(0, 10) : '';
+    form.date_resigned = row.date_resigned ? String(row.date_resigned).substring(0, 10) : '';
     form.status = row.status ?? 'active';
+    form.notes = row.notes ?? '';
     showModal.value = true;
 };
 
@@ -277,6 +281,13 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
                     </FormField>
                     <FormField label="Date Hired" :error="form.errors.date_hired">
                         <input v-model="form.date_hired" type="date" class="input" />
+                    </FormField>
+                    <FormField label="Date Resigned" :error="form.errors.date_resigned">
+                        <input v-model="form.date_resigned" type="date" class="input" />
+                        <p class="help">Fill in only if the employee has resigned.</p>
+                    </FormField>
+                    <FormField label="Notes / Remarks" :error="form.errors.notes" class="sm:col-span-2">
+                        <textarea v-model="form.notes" rows="3" class="input" placeholder="Optional — any relevant notes about this employee."></textarea>
                     </FormField>
                 </div>
                 <div class="flex justify-end gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3">

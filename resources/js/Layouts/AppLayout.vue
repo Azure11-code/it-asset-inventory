@@ -485,7 +485,6 @@ onMounted(() => {
                 >
                     <component :is="sidebarCollapsed ? ChevronDoubleRightIcon : ChevronDoubleLeftIcon" class="h-4 w-4" />
                 </button>
-                <span class="text-sm font-semibold text-slate-900 lg:hidden">IT Inventory</span>
                 <div class="ml-auto lg:ml-0 flex-1 min-w-0 max-w-lg">
                     <GlobalSearch />
                 </div>
