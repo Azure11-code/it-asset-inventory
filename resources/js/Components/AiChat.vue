@@ -1,5 +1,5 @@
 <script setup>
-import { ref, nextTick, computed } from 'vue';
+import { ref, nextTick, computed, watch } from 'vue';
 import { marked } from 'marked';
 import { SparklesIcon, XMarkIcon, PaperAirplaneIcon, TrashIcon } from '@heroicons/vue/24/outline';
 
@@ -18,12 +18,47 @@ const renderMarkdown = (text) => {
     }
 };
 
+// ── Persist chat history in localStorage so it survives page navigation/refresh ──
+// Cap at 50 messages and expire the whole session after 12 hours to avoid stale threads.
+const STORAGE_KEY = 'it_inventory_ai_chat_v1';
+const MAX_STORED = 50;
+const EXPIRY_MS  = 12 * 60 * 60 * 1000; // 12 hours
+
+const loadHistory = () => {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!parsed?.messages) return [];
+        if (parsed.savedAt && (Date.now() - parsed.savedAt) > EXPIRY_MS) {
+            localStorage.removeItem(STORAGE_KEY);
+            return [];
+        }
+        return Array.isArray(parsed.messages) ? parsed.messages : [];
+    } catch (e) {
+        return [];
+    }
+};
+
+const persistHistory = (msgs) => {
+    try {
+        const trimmed = msgs.slice(-MAX_STORED);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            savedAt: Date.now(),
+            messages: trimmed,
+        }));
+    } catch (e) { /* quota/private-mode — silently ignore */ }
+};
+
 const open = ref(false);
 const input = ref('');
-const messages = ref([]);         // [{ role: 'user'|'model', text, tools_used? }]
+const messages = ref(loadHistory()); // [{ role: 'user'|'model', text, tools_used? }]
 const loading = ref(false);
 const scrollAreaRef = ref(null);
 const inputRef = ref(null);
+
+// Auto-save whenever messages array mutates
+watch(messages, (val) => persistHistory(val), { deep: true });
 
 const SUGGESTED = [
     'Ilan lahat ang assets?',
@@ -41,12 +76,16 @@ const scrollToBottom = () => {
 
 const openChat = () => {
     open.value = true;
-    nextTick(() => inputRef.value?.focus());
+    nextTick(() => {
+        inputRef.value?.focus();
+        scrollToBottom();
+    });
 };
 
 const clearChat = () => {
     messages.value = [];
     input.value = '';
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
 };
 
 const send = async (overrideText = null) => {
