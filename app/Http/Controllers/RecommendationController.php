@@ -79,10 +79,20 @@ class RecommendationController extends Controller implements HasMiddleware
             'asset.category', 'asset.brand',
             'requestor.department',
             'preparedBy', 'reviewedBy', 'notedBy',
+            'attachments.uploader:id,name',
         ]);
 
         return Inertia::render('Recommendations/Show', [
             'recommendation' => $this->serialize($recommendation),
+            'attachments'    => $recommendation->attachments->map(fn ($a) => [
+                'id'            => $a->id,
+                'original_name' => $a->original_name,
+                'mime_type'     => $a->mime_type,
+                'size_bytes'    => $a->size_bytes,
+                'label'         => $a->label,
+                'uploaded_by'   => $a->uploader?->name,
+                'created_at'    => $a->created_at?->format('Y-m-d H:i'),
+            ])->all(),
         ]);
     }
 

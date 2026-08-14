@@ -10,11 +10,15 @@ import {
     ChevronLeftIcon, PencilSquareIcon, TrashIcon, ArrowDownTrayIcon, PrinterIcon,
     DocumentArrowDownIcon,
 } from '@heroicons/vue/24/outline';
+import Attachments from '@/Components/Attachments.vue';
 import { usePermissions } from '@/composables/usePermissions';
 
 const { can } = usePermissions();
 
-const props = defineProps({ permit: Object });
+const props = defineProps({
+    permit:      Object,
+    attachments: { type: Array, default: () => [] },
+});
 
 const statusTone = {
     draft:     'slate',
@@ -80,6 +84,18 @@ const doDelete = () => router.delete(`/permits/${props.permit.id}`);
             <span class="text-sm text-slate-500">
                 Valid {{ fmtDate(permit.valid_from) }} → {{ fmtDate(permit.valid_to) }}
             </span>
+        </div>
+
+        <!-- ─────────── Attachments ─────────── -->
+        <div class="mb-4 print:hidden">
+            <Attachments
+                entity="permits"
+                :entity-id="permit.id"
+                resource-key="permits"
+                :attachments="attachments"
+                title="Supporting Documents"
+                subtitle="Upload the signed scanned copy of this permit, or related endorsement letters."
+            />
         </div>
 
         <!-- ─────────── Printable document ─────────── -->

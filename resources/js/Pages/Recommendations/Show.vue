@@ -10,11 +10,15 @@ import {
     DocumentArrowDownIcon,
 } from '@heroicons/vue/24/outline';
 import html2canvas from 'html2canvas';
+import Attachments from '@/Components/Attachments.vue';
 import { usePermissions } from '@/composables/usePermissions';
 
 const { can } = usePermissions();
 
-const props = defineProps({ recommendation: Object });
+const props = defineProps({
+    recommendation: Object,
+    attachments:    { type: Array, default: () => [] },
+});
 
 const statusTone = { draft: 'slate', submitted: 'sky', approved: 'emerald', closed: 'slate' };
 
@@ -70,6 +74,18 @@ const doDelete = () => router.delete(`/recommendations/${props.recommendation.id
         <div class="flex items-center gap-3 mb-4 print:hidden">
             <Badge :tone="statusTone[recommendation.status] || 'slate'" dot>{{ recommendation.status }}</Badge>
             <span class="text-sm text-slate-500">{{ fmtDate(recommendation.report_date) }}</span>
+        </div>
+
+        <!-- ─────────── Attachments ─────────── -->
+        <div class="mb-4 print:hidden">
+            <Attachments
+                entity="recommendations"
+                :entity-id="recommendation.id"
+                resource-key="recommendations"
+                :attachments="attachments"
+                title="Supporting Documents"
+                subtitle="Upload the scanned signed copy of this recommendation, plus any supporting receipts or quotations."
+            />
         </div>
 
         <!-- ─────────── Printable Recommendation ─────────── -->

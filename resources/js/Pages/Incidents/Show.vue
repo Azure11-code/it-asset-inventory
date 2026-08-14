@@ -10,11 +10,15 @@ import {
     DocumentArrowDownIcon,
 } from '@heroicons/vue/24/outline';
 import html2canvas from 'html2canvas';
+import Attachments from '@/Components/Attachments.vue';
 import { usePermissions } from '@/composables/usePermissions';
 
 const { can } = usePermissions();
 
-const props = defineProps({ report: Object });
+const props = defineProps({
+    report:      Object,
+    attachments: { type: Array, default: () => [] },
+});
 
 const statusTone = { draft: 'slate', submitted: 'sky', approved: 'emerald', closed: 'slate' };
 
@@ -77,6 +81,18 @@ const doDelete = () => router.delete(`/incidents/${props.report.id}`);
         <div class="flex items-center gap-3 mb-4 print:hidden">
             <Badge :tone="statusTone[report.status] || 'slate'" dot>{{ report.status }}</Badge>
             <span class="text-sm text-slate-500">Reported {{ fmtDate(report.report_date) }}</span>
+        </div>
+
+        <!-- ─────────── Attachments ─────────── -->
+        <div class="mb-4 print:hidden">
+            <Attachments
+                entity="incidents"
+                :entity-id="report.id"
+                resource-key="incidents"
+                :attachments="attachments"
+                title="Supporting Documents"
+                subtitle="Attach the signed scanned copy, photos of the defect, warranty paperwork, or related files."
+            />
         </div>
 
         <!-- ─────────── Printable IR ─────────── -->

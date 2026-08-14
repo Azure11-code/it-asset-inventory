@@ -3,6 +3,7 @@
 use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\AccountabilityController;
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AssetCodeRuleController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SignatoryController;
@@ -307,6 +308,11 @@ Route::middleware('auth')->group(function () {
 
     // AI Assistant
     Route::post('ai/chat',          [AiChatController::class, 'chat'])->name('ai.chat');
+
+    // Polymorphic attachments (supports recommendations, incidents, permits)
+    Route::post('attachments/{entity}/{id}',                              [AttachmentController::class, 'store'])->name('attachments.store');
+    Route::get('attachments/{entity}/{id}/{attachment}/download',         [AttachmentController::class, 'download'])->name('attachments.download');
+    Route::delete('attachments/{entity}/{id}/{attachment}',               [AttachmentController::class, 'destroy'])->name('attachments.destroy');
 
     Route::get('permits/{permit}/docx',                  [PermitController::class, 'docx'])->name('permits.docx');
     Route::get('incidents/{incident}/docx',              [IncidentReportController::class, 'docx'])->name('incidents.docx');

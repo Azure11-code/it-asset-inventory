@@ -78,10 +78,20 @@ class IncidentReportController extends Controller implements HasMiddleware
             'asset.category', 'asset.brand',
             'endUser.department',
             'preparedBy', 'notedBy', 'notedBySecondary', 'approvedBy',
+            'attachments.uploader:id,name',
         ]);
 
         return Inertia::render('Incidents/Show', [
-            'report' => $this->serialize($incident),
+            'report'      => $this->serialize($incident),
+            'attachments' => $incident->attachments->map(fn ($a) => [
+                'id'            => $a->id,
+                'original_name' => $a->original_name,
+                'mime_type'     => $a->mime_type,
+                'size_bytes'    => $a->size_bytes,
+                'label'         => $a->label,
+                'uploaded_by'   => $a->uploader?->name,
+                'created_at'    => $a->created_at?->format('Y-m-d H:i'),
+            ])->all(),
         ]);
     }
 

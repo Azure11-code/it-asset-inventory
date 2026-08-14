@@ -126,10 +126,20 @@ class PermitController extends Controller implements HasMiddleware
             'requestedBy',
             'issuedBy', 'notedBy', 'notedBySecondary', 'approvedBy',
             'items.asset',
+            'attachments.uploader:id,name',
         ]);
 
         return Inertia::render('Permits/Show', [
-            'permit' => $this->serialize($permit),
+            'permit'      => $this->serialize($permit),
+            'attachments' => $permit->attachments->map(fn ($a) => [
+                'id'            => $a->id,
+                'original_name' => $a->original_name,
+                'mime_type'     => $a->mime_type,
+                'size_bytes'    => $a->size_bytes,
+                'label'         => $a->label,
+                'uploaded_by'   => $a->uploader?->name,
+                'created_at'    => $a->created_at?->format('Y-m-d H:i'),
+            ])->all(),
         ]);
     }
 
