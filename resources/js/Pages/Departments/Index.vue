@@ -11,6 +11,9 @@ import EmptyState from '@/Components/EmptyState.vue';
 import Badge from '@/Components/Badge.vue';
 import SortableTh from '@/Components/SortableTh.vue';
 import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, BuildingOffice2Icon } from '@heroicons/vue/24/outline';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const props = defineProps({ departments: Object, filters: Object });
 
@@ -53,7 +56,7 @@ const doDelete = () => router.delete(`/departments/${toDelete.value.id}`, {
         <template #header>
             <PageHeader title="Departments" subtitle="Organizational departments and units.">
                 <template #actions>
-                    <button class="btn-primary" @click="openCreate">
+                    <button v-if="can('departments', 'create')" class="btn-primary" @click="openCreate">
                         <PlusIcon class="h-4 w-4" /> Add Department
                     </button>
                 </template>
@@ -74,7 +77,7 @@ const doDelete = () => router.delete(`/departments/${toDelete.value.id}`, {
                 description="Add the departments that own or use IT assets."
                 :icon="BuildingOffice2Icon"
             >
-                <button class="btn-primary" @click="openCreate">
+                <button v-if="can('departments', 'create')" class="btn-primary" @click="openCreate">
                     <PlusIcon class="h-4 w-4" /> Add your first department
                 </button>
             </EmptyState>
@@ -104,8 +107,8 @@ const doDelete = () => router.delete(`/departments/${toDelete.value.id}`, {
                                 </td>
                                 <td class="cell-right">
                                     <div class="inline-flex items-center gap-1">
-                                        <button class="btn-ghost" @click="openEdit(row)"><PencilSquareIcon class="h-4 w-4" /></button>
-                                        <button class="btn-ghost-danger" @click="confirmDelete(row)"><TrashIcon class="h-4 w-4" /></button>
+                                        <button v-if="can('departments', 'edit')" class="btn-ghost" @click="openEdit(row)"><PencilSquareIcon class="h-4 w-4" /></button>
+                                        <button v-if="can('departments', 'delete')" class="btn-ghost-danger" @click="confirmDelete(row)"><TrashIcon class="h-4 w-4" /></button>
                                     </div>
                                 </td>
                             </tr>

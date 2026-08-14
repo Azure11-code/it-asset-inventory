@@ -8,6 +8,9 @@ import EmptyState from '@/Components/EmptyState.vue';
 import Badge from '@/Components/Badge.vue';
 import Combobox from '@/Components/Combobox.vue';
 import { PlusIcon, EyeIcon, MagnifyingGlassIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const props = defineProps({ reports: Object, filters: Object });
 
@@ -41,7 +44,7 @@ const statusTone = { draft: 'slate', submitted: 'sky', approved: 'emerald', clos
         <template #header>
             <PageHeader title="Incident Reports" subtitle="Defect or failure reports — prerequisite for a part replacement.">
                 <template #actions>
-                    <Link href="/incidents/create" class="btn-primary">
+                    <Link v-if="can('incidents', 'create')" href="/incidents/create" class="btn-primary">
                         <PlusIcon class="h-4 w-4" /> New IR
                     </Link>
                 </template>
@@ -63,7 +66,7 @@ const statusTone = { draft: 'slate', submitted: 'sky', approved: 'emerald', clos
                 description="File an IR when an IT asset develops a defect — it's required before recording a part replacement."
                 :icon="ExclamationTriangleIcon"
             >
-                <Link href="/incidents/create" class="btn-primary">
+                <Link v-if="can('incidents', 'create')" href="/incidents/create" class="btn-primary">
                     <PlusIcon class="h-4 w-4" /> File your first IR
                 </Link>
             </EmptyState>

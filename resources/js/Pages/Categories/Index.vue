@@ -11,6 +11,9 @@ import EmptyState from '@/Components/EmptyState.vue';
 import Badge from '@/Components/Badge.vue';
 import SortableTh from '@/Components/SortableTh.vue';
 import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, Squares2X2Icon } from '@heroicons/vue/24/outline';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const props = defineProps({ categories: Object, filters: Object });
 
@@ -54,7 +57,7 @@ const doDelete = () => router.delete(`/categories/${toDelete.value.id}`, {
         <template #header>
             <PageHeader title="Categories" subtitle="Asset categories (laptop, desktop, monitor, etc.).">
                 <template #actions>
-                    <button class="btn-primary" @click="openCreate">
+                    <button v-if="can('categories', 'create')" class="btn-primary" @click="openCreate">
                         <PlusIcon class="h-4 w-4" /> Add Category
                     </button>
                 </template>
@@ -75,7 +78,7 @@ const doDelete = () => router.delete(`/categories/${toDelete.value.id}`, {
                 description="Group your assets by category (laptops, monitors, printers, etc.)."
                 :icon="Squares2X2Icon"
             >
-                <button class="btn-primary" @click="openCreate">
+                <button v-if="can('categories', 'create')" class="btn-primary" @click="openCreate">
                     <PlusIcon class="h-4 w-4" /> Add your first category
                 </button>
             </EmptyState>
@@ -110,8 +113,8 @@ const doDelete = () => router.delete(`/categories/${toDelete.value.id}`, {
                                 </td>
                                 <td class="cell-right">
                                     <div class="inline-flex items-center gap-1">
-                                        <button class="btn-ghost" @click="openEdit(row)"><PencilSquareIcon class="h-4 w-4" /></button>
-                                        <button class="btn-ghost-danger" @click="confirmDelete(row)"><TrashIcon class="h-4 w-4" /></button>
+                                        <button v-if="can('categories', 'edit')" class="btn-ghost" @click="openEdit(row)"><PencilSquareIcon class="h-4 w-4" /></button>
+                                        <button v-if="can('categories', 'delete')" class="btn-ghost-danger" @click="confirmDelete(row)"><TrashIcon class="h-4 w-4" /></button>
                                     </div>
                                 </td>
                             </tr>

@@ -5,10 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\Asset;
 use App\Models\AssetPartChange;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 
-class AssetPartChangeController extends Controller
+class AssetPartChangeController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('perm:assets,edit',   only: ['store', 'update']),
+            new Middleware('perm:assets,delete', only: ['destroy']),
+        ];
+    }
+
     public function store(Request $request, Asset $asset)
     {
         $data = $this->validateData($request);

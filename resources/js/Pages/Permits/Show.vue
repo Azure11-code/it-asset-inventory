@@ -10,6 +10,9 @@ import {
     ChevronLeftIcon, PencilSquareIcon, TrashIcon, ArrowDownTrayIcon, PrinterIcon,
     DocumentArrowDownIcon,
 } from '@heroicons/vue/24/outline';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const props = defineProps({ permit: Object });
 
@@ -55,17 +58,17 @@ const doDelete = () => router.delete(`/permits/${props.permit.id}`);
             <PageHeader :title="permit.permit_no" :subtitle="permit.purpose">
                 <template #actions>
                     <Link href="/permits" class="btn-secondary"><ChevronLeftIcon class="h-4 w-4" /> Back</Link>
-                    <button class="btn-secondary" @click="printDoc"><PrinterIcon class="h-4 w-4" /> Print</button>
-                    <button class="btn-secondary" :disabled="downloading" @click="downloadPng">
+                    <button v-if="can('permits', 'print')" class="btn-secondary" @click="printDoc"><PrinterIcon class="h-4 w-4" /> Print</button>
+                    <button v-if="can('permits', 'print')" class="btn-secondary" :disabled="downloading" @click="downloadPng">
                         <ArrowDownTrayIcon class="h-4 w-4" /> {{ downloading ? 'Preparing…' : 'Download PNG' }}
                     </button>
-                    <a :href="`/permits/${permit.id}/docx`" class="btn-secondary">
+                    <a v-if="can('permits', 'print')" :href="`/permits/${permit.id}/docx`" class="btn-secondary">
                         <DocumentArrowDownIcon class="h-4 w-4" /> Download Word
                     </a>
-                    <Link :href="`/permits/${permit.id}/edit`" class="btn-secondary">
+                    <Link v-if="can('permits', 'edit')" :href="`/permits/${permit.id}/edit`" class="btn-secondary">
                         <PencilSquareIcon class="h-4 w-4" /> Edit
                     </Link>
-                    <button class="btn-danger" @click="showDelete = true">
+                    <button v-if="can('permits', 'delete')" class="btn-danger" @click="showDelete = true">
                         <TrashIcon class="h-4 w-4" /> Delete
                     </button>
                 </template>

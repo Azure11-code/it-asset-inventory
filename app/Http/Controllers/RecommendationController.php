@@ -7,10 +7,23 @@ use App\Models\Employee;
 use App\Models\Recommendation;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
 
-class RecommendationController extends Controller
+class RecommendationController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('perm:recommendations,view',   only: ['index', 'show']),
+            new Middleware('perm:recommendations,create', only: ['create', 'store']),
+            new Middleware('perm:recommendations,edit',   only: ['edit', 'update']),
+            new Middleware('perm:recommendations,delete', only: ['destroy']),
+            new Middleware('perm:recommendations,print',  only: ['docx']),
+        ];
+    }
+
     public function index(Request $request)
     {
         $recs = Recommendation::query()

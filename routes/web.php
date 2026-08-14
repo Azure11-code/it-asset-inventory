@@ -1,12 +1,15 @@
 <?php
 
+use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\AccountabilityController;
 use App\Http\Controllers\AssetCodeRuleController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SignatoryController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\AssetMovementController;
 use App\Http\Controllers\AssetPartChangeController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ConditionController;
@@ -225,7 +228,7 @@ Route::middleware('auth')->group(function () {
         }
         return $exporter->stream('Category × Department', 'Category', $departments, $rows,
             'category-x-department-' . now()->format('Ymd-His') . '.xlsx');
-    })->name('dashboard.export.catDept');
+    })->name('dashboard.export.catDept')->middleware('perm:assets,export');
 
     Route::get('dashboard/exports/loc-cat.xlsx', function (\App\Services\PivotXlsxExporter $exporter) {
         $rowsRaw = Asset::query()
@@ -247,7 +250,7 @@ Route::middleware('auth')->group(function () {
         }
         return $exporter->stream('Location × Category', 'Location', $categories, $rows,
             'location-x-category-' . now()->format('Ymd-His') . '.xlsx');
-    })->name('dashboard.export.locCat');
+    })->name('dashboard.export.locCat')->middleware('perm:assets,export');
 
     Route::get('assets/bulk-receive',     [AssetController::class, 'bulkReceiveForm'])->name('assets.bulkReceive');
     Route::post('assets/bulk-receive',    [AssetController::class, 'bulkStore'])->name('assets.bulkStore');
@@ -278,7 +281,9 @@ Route::middleware('auth')->group(function () {
     Route::get('employees/{employee}/assets', [EmployeeController::class, 'assets'])->name('employees.assets');
     Route::get('employees/{employee}/accountability.docx', [EmployeeController::class, 'accountability'])->name('employees.accountability');
     Route::resource('signatories', SignatoryController::class)->only(['index', 'store', 'update', 'destroy']);
-    Route::resource('users',       UserController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::middleware('admin')->group(function () {
+        Route::resource('users', UserController::class)->only(['index', 'store', 'update', 'destroy']);
+    });
 
     Route::resource('permits',          PermitController::class)->parameters(['permits' => 'permit']);
     Route::resource('incidents',        IncidentReportController::class)->parameters(['incidents' => 'incident']);
@@ -286,6 +291,22 @@ Route::middleware('auth')->group(function () {
 
     Route::get('accountability',                            [AccountabilityController::class, 'index'])->name('accountability.index');
     Route::get('accountability/{employee}/download',        [AccountabilityController::class, 'download'])->name('accountability.download');
+
+    // Backups (admin only)
+    Route::middleware('admin')->group(function () {
+        Route::get('backups',                     [BackupController::class, 'index'])->name('backups.index');
+        Route::post('backups/sql',                [BackupController::class, 'storeSql'])->name('backups.storeSql');
+        Route::post('backups/full',               [BackupController::class, 'storeFull'])->name('backups.storeFull');
+        Route::get('backups/{filename}/download', [BackupController::class, 'download'])->name('backups.download');
+        Route::delete('backups/{filename}',       [BackupController::class, 'destroy'])->name('backups.destroy');
+    });
+
+    // Global search
+    Route::get('search',            [SearchController::class, 'page'])->name('search.page');
+    Route::get('search/suggest',    [SearchController::class, 'suggest'])->name('search.suggest');
+
+    // AI Assistant
+    Route::post('ai/chat',          [AiChatController::class, 'chat'])->name('ai.chat');
 
     Route::get('permits/{permit}/docx',                  [PermitController::class, 'docx'])->name('permits.docx');
     Route::get('incidents/{incident}/docx',              [IncidentReportController::class, 'docx'])->name('incidents.docx');

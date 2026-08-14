@@ -4,12 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Models\Condition;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
-class ConditionController extends Controller
+class ConditionController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('perm:conditions,view',   only: ['index']),
+            new Middleware('perm:conditions,create', only: ['store']),
+            new Middleware('perm:conditions,edit',   only: ['update']),
+            new Middleware('perm:conditions,delete', only: ['destroy']),
+        ];
+    }
+
     private const SORTABLE = ['sort_order', 'name', 'description', 'assets_count', 'is_active'];
 
     public function index(Request $request)

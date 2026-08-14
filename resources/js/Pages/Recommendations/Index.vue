@@ -8,6 +8,9 @@ import EmptyState from '@/Components/EmptyState.vue';
 import Badge from '@/Components/Badge.vue';
 import Combobox from '@/Components/Combobox.vue';
 import { PlusIcon, EyeIcon, MagnifyingGlassIcon, DocumentTextIcon } from '@heroicons/vue/24/outline';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const props = defineProps({ recommendations: Object, filters: Object });
 
@@ -41,7 +44,7 @@ const statusTone = { draft: 'slate', submitted: 'sky', approved: 'emerald', clos
         <template #header>
             <PageHeader title="Recommendations" subtitle="Upgrade or replacement request memos.">
                 <template #actions>
-                    <Link href="/recommendations/create" class="btn-primary">
+                    <Link v-if="can('recommendations', 'create')" href="/recommendations/create" class="btn-primary">
                         <PlusIcon class="h-4 w-4" /> New Recommendation
                     </Link>
                 </template>
@@ -63,7 +66,7 @@ const statusTone = { draft: 'slate', submitted: 'sky', approved: 'emerald', clos
                 description="File a recommendation memo to justify a hardware upgrade or component swap."
                 :icon="DocumentTextIcon"
             >
-                <Link href="/recommendations/create" class="btn-primary">
+                <Link v-if="can('recommendations', 'create')" href="/recommendations/create" class="btn-primary">
                     <PlusIcon class="h-4 w-4" /> File your first recommendation
                 </Link>
             </EmptyState>

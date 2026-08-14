@@ -11,6 +11,9 @@ import EmptyState from '@/Components/EmptyState.vue';
 import Badge from '@/Components/Badge.vue';
 import SortableTh from '@/Components/SortableTh.vue';
 import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, MapPinIcon } from '@heroicons/vue/24/outline';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const props = defineProps({
     locations: Object,
@@ -78,7 +81,7 @@ const doDelete = () => {
         <template #header>
             <PageHeader title="Locations" subtitle="Sites where assets are kept.">
                 <template #actions>
-                    <button class="btn-primary" @click="openCreate">
+                    <button v-if="can('locations', 'create')" class="btn-primary" @click="openCreate">
                         <PlusIcon class="h-4 w-4" /> Add Location
                     </button>
                 </template>
@@ -100,7 +103,7 @@ const doDelete = () => {
                 description="Add the sites or rooms where your IT assets are stored or assigned."
                 :icon="MapPinIcon"
             >
-                <button class="btn-primary" @click="openCreate">
+                <button v-if="can('locations', 'create')" class="btn-primary" @click="openCreate">
                     <PlusIcon class="h-4 w-4" /> Add your first location
                 </button>
             </EmptyState>
@@ -132,10 +135,10 @@ const doDelete = () => {
                                 </td>
                                 <td class="cell-right">
                                     <div class="inline-flex items-center gap-1">
-                                        <button class="btn-ghost" @click="openEdit(row)">
+                                        <button v-if="can('locations', 'edit')" class="btn-ghost" @click="openEdit(row)">
                                             <PencilSquareIcon class="h-4 w-4" />
                                         </button>
-                                        <button class="btn-ghost-danger" @click="confirmDelete(row)">
+                                        <button v-if="can('locations', 'delete')" class="btn-ghost-danger" @click="confirmDelete(row)">
                                             <TrashIcon class="h-4 w-4" />
                                         </button>
                                     </div>

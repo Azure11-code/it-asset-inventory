@@ -8,12 +8,25 @@ use App\Models\Location;
 use App\Services\AccountabilityDocxGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-class EmployeeController extends Controller
+class EmployeeController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('perm:employees,view',       only: ['index', 'assets']),
+            new Middleware('perm:employees,create',     only: ['store']),
+            new Middleware('perm:employees,edit',       only: ['update']),
+            new Middleware('perm:employees,delete',     only: ['destroy']),
+            new Middleware('perm:accountability,print', only: ['accountability']),
+        ];
+    }
+
     private const SORT_MAP = [
         'employee'   => 'employees.last_name',
         'position'   => 'employees.position',

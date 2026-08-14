@@ -10,6 +10,9 @@ import {
     DocumentArrowDownIcon,
 } from '@heroicons/vue/24/outline';
 import html2canvas from 'html2canvas';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const props = defineProps({ recommendation: Object });
 
@@ -47,17 +50,17 @@ const doDelete = () => router.delete(`/recommendations/${props.recommendation.id
             <PageHeader :title="recommendation.doc_no" :subtitle="recommendation.subject">
                 <template #actions>
                     <Link href="/recommendations" class="btn-secondary"><ChevronLeftIcon class="h-4 w-4" /> Back</Link>
-                    <button class="btn-secondary" @click="printDoc"><PrinterIcon class="h-4 w-4" /> Print</button>
-                    <button class="btn-secondary" :disabled="downloading" @click="downloadPng">
+                    <button v-if="can('recommendations', 'print')" class="btn-secondary" @click="printDoc"><PrinterIcon class="h-4 w-4" /> Print</button>
+                    <button v-if="can('recommendations', 'print')" class="btn-secondary" :disabled="downloading" @click="downloadPng">
                         <ArrowDownTrayIcon class="h-4 w-4" /> {{ downloading ? 'Preparing…' : 'Download PNG' }}
                     </button>
-                    <a :href="`/recommendations/${recommendation.id}/docx`" class="btn-secondary">
+                    <a v-if="can('recommendations', 'print')" :href="`/recommendations/${recommendation.id}/docx`" class="btn-secondary">
                         <DocumentArrowDownIcon class="h-4 w-4" /> Download Word
                     </a>
-                    <Link :href="`/recommendations/${recommendation.id}/edit`" class="btn-secondary">
+                    <Link v-if="can('recommendations', 'edit')" :href="`/recommendations/${recommendation.id}/edit`" class="btn-secondary">
                         <PencilSquareIcon class="h-4 w-4" /> Edit
                     </Link>
-                    <button class="btn-danger" @click="showDelete = true">
+                    <button v-if="can('recommendations', 'delete')" class="btn-danger" @click="showDelete = true">
                         <TrashIcon class="h-4 w-4" /> Delete
                     </button>
                 </template>

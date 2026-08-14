@@ -9,6 +9,9 @@ import Modal from '@/Components/Modal.vue';
 import FormField from '@/Components/FormField.vue';
 import Combobox from '@/Components/Combobox.vue';
 import AssetTag from '@/Components/AssetTag.vue';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const RETURN_STATUSES = [
     { value: 'in_stock',   label: 'In Stock (ready to re-issue)' },
@@ -234,22 +237,22 @@ const deletePart = () => router.delete(`/assets/${props.asset.id}/part-changes/$
                     </p>
                 </div>
                 <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                    <button v-if="canIssue"    class="btn-primary"   @click="openIssue">
+                    <button v-if="canIssue    && can('assets', 'edit')" class="btn-primary"   @click="openIssue">
                         <ArrowUpOnSquareIcon class="h-3.5 w-3.5" /> Issue
                     </button>
-                    <button v-if="canReturn"   class="btn-primary"   @click="openReturn">
+                    <button v-if="canReturn   && can('assets', 'edit')" class="btn-primary"   @click="openReturn">
                         <ArrowDownTrayIcon class="h-3.5 w-3.5" /> Return
                     </button>
-                    <button v-if="canTransfer" class="btn-secondary" @click="openTransfer">
+                    <button v-if="canTransfer && can('assets', 'edit')" class="btn-secondary" @click="openTransfer">
                         <ArrowsRightLeftIcon class="h-3.5 w-3.5" /> Transfer
                     </button>
-                    <button class="btn-secondary" @click="showPrintTag = true">
+                    <button v-if="can('assets', 'print')" class="btn-secondary" @click="showPrintTag = true">
                         <ArrowDownOnSquareIcon class="h-3.5 w-3.5" /> Tag
                     </button>
-                    <Link :href="`/assets/${asset.id}/edit`" class="btn-secondary">
+                    <Link v-if="can('assets', 'edit')" :href="`/assets/${asset.id}/edit`" class="btn-secondary">
                         <PencilSquareIcon class="h-3.5 w-3.5" /> Edit
                     </Link>
-                    <button class="btn-ghost-danger" @click="showDelete = true" title="Delete">
+                    <button v-if="can('assets', 'delete')" class="btn-ghost-danger" @click="showDelete = true" title="Delete">
                         <TrashIcon class="h-3.5 w-3.5" />
                     </button>
                 </div>
@@ -451,7 +454,7 @@ const deletePart = () => router.delete(`/assets/${props.asset.id}/part-changes/$
                         <h2 class="card-title text-sm">Part Changes</h2>
                         <p class="card-subtitle text-[11px]">Log component swaps and upgrades (RAM, SSD, GPU, etc.).</p>
                     </div>
-                    <button class="btn-primary" @click="openPartCreate">
+                    <button v-if="can('assets', 'edit')" class="btn-primary" @click="openPartCreate">
                         <PlusIcon class="h-3.5 w-3.5" /> Add Part Change
                     </button>
                 </header>
@@ -492,8 +495,8 @@ const deletePart = () => router.delete(`/assets/${props.asset.id}/part-changes/$
                                 <p v-if="pc.performer" class="text-[11px] text-slate-400">by {{ pc.performer.name }}</p>
                             </div>
                             <div class="inline-flex items-center gap-1">
-                                <button class="btn-ghost" @click="openPartEdit(pc)" title="Edit"><PencilSquareIcon class="h-3.5 w-3.5" /></button>
-                                <button class="btn-ghost-danger" @click="askDeletePart(pc)" title="Delete"><TrashIcon class="h-3.5 w-3.5" /></button>
+                                <button v-if="can('assets', 'edit')" class="btn-ghost" @click="openPartEdit(pc)" title="Edit"><PencilSquareIcon class="h-3.5 w-3.5" /></button>
+                                <button v-if="can('assets', 'delete')" class="btn-ghost-danger" @click="askDeletePart(pc)" title="Delete"><TrashIcon class="h-3.5 w-3.5" /></button>
                             </div>
                         </div>
                     </li>
@@ -666,12 +669,13 @@ const deletePart = () => router.delete(`/assets/${props.asset.id}/part-changes/$
             </div>
 
             <div class="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3">
-                <button type="button" class="btn-ghost-danger inline-flex items-center gap-1 px-2" @click="showMovementDelete = true">
+                <button v-if="can('assets', 'delete')" type="button" class="btn-ghost-danger inline-flex items-center gap-1 px-2" @click="showMovementDelete = true">
                     <TrashIcon class="h-4 w-4" /> Delete
                 </button>
+                <span v-else></span>
                 <div class="flex gap-2">
-                    <button type="button" class="btn-secondary" @click="showMovement = false">Cancel</button>
-                    <button type="button" class="btn-primary" :disabled="movementForm.processing" @click="submitMovement">
+                    <button type="button" class="btn-secondary" @click="showMovement = false">Close</button>
+                    <button v-if="can('assets', 'edit')" type="button" class="btn-primary" :disabled="movementForm.processing" @click="submitMovement">
                         {{ movementForm.processing ? 'Saving...' : 'Save Changes' }}
                     </button>
                 </div>

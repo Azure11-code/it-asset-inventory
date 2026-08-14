@@ -10,6 +10,9 @@ import SortableTh from '@/Components/SortableTh.vue';
 import Combobox from '@/Components/Combobox.vue';
 import Modal from '@/Components/Modal.vue';
 import { PlusIcon, EyeIcon, MagnifyingGlassIcon, CpuChipIcon, ArchiveBoxArrowDownIcon, ArrowDownTrayIcon, ArrowUpTrayIcon, DocumentArrowDownIcon } from '@heroicons/vue/24/outline';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const STATUS_OPTIONS = [
     { value: 'in_stock',   label: 'In Stock' },
@@ -127,16 +130,16 @@ const exportUrl = computed(() => {
         <template #header>
             <PageHeader title="Assets" subtitle="Every physical IT peripheral your team owns — one row per device.">
                 <template #actions>
-                    <button type="button" class="btn-secondary" @click="showImport = true" title="Import Excel">
+                    <button v-if="can('assets', 'import')" type="button" class="btn-secondary" @click="showImport = true" title="Import Excel">
                         <ArrowUpTrayIcon class="h-4 w-4" /> <span class="hidden sm:inline">Import Excel</span><span class="sm:hidden">Import</span>
                     </button>
-                    <a :href="exportUrl" class="btn-secondary" :title="hasFilters ? 'Export filtered rows' : 'Export all rows'">
+                    <a v-if="can('assets', 'export')" :href="exportUrl" class="btn-secondary" :title="hasFilters ? 'Export filtered rows' : 'Export all rows'">
                         <ArrowDownTrayIcon class="h-4 w-4" /> <span class="hidden sm:inline">Export Excel</span><span class="sm:hidden">Export</span>
                     </a>
-                    <Link href="/assets/bulk-receive" class="btn-secondary" title="Bulk Receive">
+                    <Link v-if="can('assets', 'create')" href="/assets/bulk-receive" class="btn-secondary" title="Bulk Receive">
                         <ArchiveBoxArrowDownIcon class="h-4 w-4" /> <span class="hidden sm:inline">Bulk Receive</span><span class="sm:hidden">Bulk</span>
                     </Link>
-                    <Link href="/assets/create" class="btn-primary" title="New Asset">
+                    <Link v-if="can('assets', 'create')" href="/assets/create" class="btn-primary" title="New Asset">
                         <PlusIcon class="h-4 w-4" /> <span class="hidden sm:inline">New Asset</span><span class="sm:hidden">New</span>
                     </Link>
                 </template>
@@ -161,7 +164,7 @@ const exportUrl = computed(() => {
                 description="Register your IT peripherals to start tracking them through their full lifecycle."
                 :icon="CpuChipIcon"
             >
-                <Link href="/assets/create" class="btn-primary">
+                <Link v-if="can('assets', 'create')" href="/assets/create" class="btn-primary">
                     <PlusIcon class="h-4 w-4" /> Add your first asset
                 </Link>
             </EmptyState>

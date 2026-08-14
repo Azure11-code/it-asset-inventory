@@ -9,13 +9,27 @@ use App\Models\Condition;
 use App\Models\Employee;
 use App\Models\Location;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
-class AssetController extends Controller
+class AssetController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('perm:assets,view',   only: ['index', 'show']),
+            new Middleware('perm:assets,create', only: ['create', 'store', 'bulkReceiveForm', 'bulkStore']),
+            new Middleware('perm:assets,edit',   only: ['edit', 'update']),
+            new Middleware('perm:assets,delete', only: ['destroy']),
+            new Middleware('perm:assets,export', only: ['export']),
+            new Middleware('perm:assets,import', only: ['import', 'importTemplate']),
+        ];
+    }
+
     private const SORT_MAP = [
         'asset_tag'      => 'assets.asset_tag',
         'category'       => 'categories.name',
@@ -337,6 +351,7 @@ class AssetController extends Controller
                 'purchase_date'            => $asset->purchase_date?->format('Y-m-d'),
                 'deployment_date'          => $asset->deployment_date?->format('Y-m-d'),
                 'purchase_cost'            => $asset->purchase_cost,
+                'vendor'                   => $asset->vendor,
                 'expected_lifespan_years'  => $asset->expected_lifespan_years,
                 'warranty_until'           => $asset->warranty_until?->format('Y-m-d'),
                 'condition_id'             => $asset->condition_id,

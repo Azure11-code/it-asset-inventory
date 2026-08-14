@@ -11,6 +11,9 @@ import EmptyState from '@/Components/EmptyState.vue';
 import Badge from '@/Components/Badge.vue';
 import SortableTh from '@/Components/SortableTh.vue';
 import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, TagIcon } from '@heroicons/vue/24/outline';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const props = defineProps({ brands: Object, filters: Object });
 
@@ -54,7 +57,7 @@ const doDelete = () => router.delete(`/brands/${toDelete.value.id}`, {
         <template #header>
             <PageHeader title="Brands" subtitle="Manufacturers and asset brands.">
                 <template #actions>
-                    <button class="btn-primary" @click="openCreate">
+                    <button v-if="can('brands', 'create')" class="btn-primary" @click="openCreate">
                         <PlusIcon class="h-4 w-4" /> Add Brand
                     </button>
                 </template>
@@ -75,7 +78,7 @@ const doDelete = () => router.delete(`/brands/${toDelete.value.id}`, {
                 description="Add the manufacturers your IT assets come from (Dell, HP, Lenovo, etc.)."
                 :icon="TagIcon"
             >
-                <button class="btn-primary" @click="openCreate">
+                <button v-if="can('brands', 'create')" class="btn-primary" @click="openCreate">
                     <PlusIcon class="h-4 w-4" /> Add your first brand
                 </button>
             </EmptyState>
@@ -105,8 +108,8 @@ const doDelete = () => router.delete(`/brands/${toDelete.value.id}`, {
                                 </td>
                                 <td class="cell-right">
                                     <div class="inline-flex items-center gap-1">
-                                        <button class="btn-ghost" @click="openEdit(row)"><PencilSquareIcon class="h-4 w-4" /></button>
-                                        <button class="btn-ghost-danger" @click="confirmDelete(row)"><TrashIcon class="h-4 w-4" /></button>
+                                        <button v-if="can('brands', 'edit')" class="btn-ghost" @click="openEdit(row)"><PencilSquareIcon class="h-4 w-4" /></button>
+                                        <button v-if="can('brands', 'delete')" class="btn-ghost-danger" @click="confirmDelete(row)"><TrashIcon class="h-4 w-4" /></button>
                                     </div>
                                 </td>
                             </tr>

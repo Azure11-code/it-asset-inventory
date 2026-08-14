@@ -9,6 +9,9 @@ import ConfirmDialog from '@/Components/ConfirmDialog.vue';
 import Badge from '@/Components/Badge.vue';
 import Combobox from '@/Components/Combobox.vue';
 import { PlusIcon, PencilSquareIcon, TrashIcon, HashtagIcon } from '@heroicons/vue/24/outline';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const props = defineProps({
     rules: Array,
@@ -61,7 +64,7 @@ const doDelete = () => router.delete(`/asset-code-rules/${toDelete.value.id}`, {
         <template #header>
             <PageHeader title="Asset Code Rules" subtitle="Numbering scheme used to auto-generate Asset Tags. Format: {YEAR}AIM{####}.">
                 <template #actions>
-                    <button class="btn-primary" @click="openCreate">
+                    <button v-if="can('asset_code_rules', 'create')" class="btn-primary" @click="openCreate">
                         <PlusIcon class="h-4 w-4" /> Add Rule
                     </button>
                 </template>
@@ -107,8 +110,8 @@ const doDelete = () => router.delete(`/asset-code-rules/${toDelete.value.id}`, {
                             </td>
                             <td class="cell-right">
                                 <div class="inline-flex items-center gap-1">
-                                    <button class="btn-ghost" @click="openEdit(r)"><PencilSquareIcon class="h-4 w-4" /></button>
-                                    <button class="btn-ghost-danger" @click="confirmDelete(r)"><TrashIcon class="h-4 w-4" /></button>
+                                    <button v-if="can('asset_code_rules', 'edit')" class="btn-ghost" @click="openEdit(r)"><PencilSquareIcon class="h-4 w-4" /></button>
+                                    <button v-if="can('asset_code_rules', 'delete')" class="btn-ghost-danger" @click="confirmDelete(r)"><TrashIcon class="h-4 w-4" /></button>
                                 </div>
                             </td>
                         </tr>

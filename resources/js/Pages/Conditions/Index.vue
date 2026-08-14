@@ -12,6 +12,9 @@ import Badge from '@/Components/Badge.vue';
 import SortableTh from '@/Components/SortableTh.vue';
 import Combobox from '@/Components/Combobox.vue';
 import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, SparklesIcon } from '@heroicons/vue/24/outline';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const props = defineProps({ conditions: Object, filters: Object });
 
@@ -74,7 +77,7 @@ const doDelete = () => router.delete(`/conditions/${toDelete.value.id}`, {
         <template #header>
             <PageHeader title="Conditions" subtitle="Asset condition labels (new, good, fair, poor, defective, …).">
                 <template #actions>
-                    <button class="btn-primary" @click="openCreate">
+                    <button v-if="can('conditions', 'create')" class="btn-primary" @click="openCreate">
                         <PlusIcon class="h-4 w-4" /> Add Condition
                     </button>
                 </template>
@@ -95,7 +98,7 @@ const doDelete = () => router.delete(`/conditions/${toDelete.value.id}`, {
                 description="Define the labels you'll use to describe asset condition."
                 :icon="SparklesIcon"
             >
-                <button class="btn-primary" @click="openCreate">
+                <button v-if="can('conditions', 'create')" class="btn-primary" @click="openCreate">
                     <PlusIcon class="h-4 w-4" /> Add your first condition
                 </button>
             </EmptyState>
@@ -133,8 +136,8 @@ const doDelete = () => router.delete(`/conditions/${toDelete.value.id}`, {
                                 </td>
                                 <td class="cell-right">
                                     <div class="inline-flex items-center gap-1">
-                                        <button class="btn-ghost" @click="openEdit(row)"><PencilSquareIcon class="h-4 w-4" /></button>
-                                        <button class="btn-ghost-danger" @click="confirmDelete(row)" :disabled="row.assets_count > 0" :title="row.assets_count > 0 ? 'In use, cannot delete' : 'Delete'">
+                                        <button v-if="can('conditions', 'edit')" class="btn-ghost" @click="openEdit(row)"><PencilSquareIcon class="h-4 w-4" /></button>
+                                        <button v-if="can('conditions', 'delete')" class="btn-ghost-danger" @click="confirmDelete(row)" :disabled="row.assets_count > 0" :title="row.assets_count > 0 ? 'In use, cannot delete' : 'Delete'">
                                             <TrashIcon class="h-4 w-4" />
                                         </button>
                                     </div>

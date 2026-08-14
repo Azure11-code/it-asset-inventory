@@ -7,11 +7,24 @@ use App\Models\AssetPermit;
 use App\Models\Employee;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
-class PermitController extends Controller
+class PermitController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('perm:permits,view',   only: ['index', 'show']),
+            new Middleware('perm:permits,create', only: ['create', 'store']),
+            new Middleware('perm:permits,edit',   only: ['edit', 'update']),
+            new Middleware('perm:permits,delete', only: ['destroy']),
+            new Middleware('perm:permits,print',  only: ['docx']),
+        ];
+    }
+
     private const SORT_MAP = [
         'permit_no'    => 'asset_permits.permit_no',
         'employee'     => 'employees.last_name',

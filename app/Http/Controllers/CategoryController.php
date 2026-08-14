@@ -4,12 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
-class CategoryController extends Controller
+class CategoryController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('perm:categories,view',   only: ['index']),
+            new Middleware('perm:categories,create', only: ['store']),
+            new Middleware('perm:categories,edit',   only: ['update']),
+            new Middleware('perm:categories,delete', only: ['destroy']),
+        ];
+    }
+
     private const SORTABLE = ['name', 'prefix', 'description', 'is_active'];
 
     public function index(Request $request)

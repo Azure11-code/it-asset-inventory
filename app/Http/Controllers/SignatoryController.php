@@ -4,11 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Models\Signatory;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
-class SignatoryController extends Controller
+class SignatoryController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('perm:signatories,view',   only: ['index']),
+            new Middleware('perm:signatories,create', only: ['store']),
+            new Middleware('perm:signatories,edit',   only: ['update']),
+            new Middleware('perm:signatories,delete', only: ['destroy']),
+        ];
+    }
+
     public function index()
     {
         $signatories = Signatory::orderBy('role')->orderBy('sort_order')->orderBy('name')->get();

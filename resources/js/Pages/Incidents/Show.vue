@@ -10,6 +10,9 @@ import {
     DocumentArrowDownIcon,
 } from '@heroicons/vue/24/outline';
 import html2canvas from 'html2canvas';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const props = defineProps({ report: Object });
 
@@ -54,17 +57,17 @@ const doDelete = () => router.delete(`/incidents/${props.report.id}`);
             <PageHeader :title="report.ir_no" :subtitle="report.reported_problem">
                 <template #actions>
                     <Link href="/incidents" class="btn-secondary"><ChevronLeftIcon class="h-4 w-4" /> Back</Link>
-                    <button class="btn-secondary" @click="printDoc"><PrinterIcon class="h-4 w-4" /> Print</button>
-                    <button class="btn-secondary" :disabled="downloading" @click="downloadPng">
+                    <button v-if="can('incidents', 'print')" class="btn-secondary" @click="printDoc"><PrinterIcon class="h-4 w-4" /> Print</button>
+                    <button v-if="can('incidents', 'print')" class="btn-secondary" :disabled="downloading" @click="downloadPng">
                         <ArrowDownTrayIcon class="h-4 w-4" /> {{ downloading ? 'Preparing…' : 'Download PNG' }}
                     </button>
-                    <a :href="`/incidents/${report.id}/docx`" class="btn-secondary">
+                    <a v-if="can('incidents', 'print')" :href="`/incidents/${report.id}/docx`" class="btn-secondary">
                         <DocumentArrowDownIcon class="h-4 w-4" /> Download Word
                     </a>
-                    <Link :href="`/incidents/${report.id}/edit`" class="btn-secondary">
+                    <Link v-if="can('incidents', 'edit')" :href="`/incidents/${report.id}/edit`" class="btn-secondary">
                         <PencilSquareIcon class="h-4 w-4" /> Edit
                     </Link>
-                    <button class="btn-danger" @click="showDelete = true">
+                    <button v-if="can('incidents', 'delete')" class="btn-danger" @click="showDelete = true">
                         <TrashIcon class="h-4 w-4" /> Delete
                     </button>
                 </template>

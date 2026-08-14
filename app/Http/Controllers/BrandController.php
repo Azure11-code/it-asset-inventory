@@ -4,12 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Models\Brand;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
-class BrandController extends Controller
+class BrandController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('perm:brands,view',   only: ['index']),
+            new Middleware('perm:brands,create', only: ['store']),
+            new Middleware('perm:brands,edit',   only: ['update']),
+            new Middleware('perm:brands,delete', only: ['destroy']),
+        ];
+    }
+
     private const SORTABLE = ['name', 'description', 'is_active'];
 
     public function index(Request $request)

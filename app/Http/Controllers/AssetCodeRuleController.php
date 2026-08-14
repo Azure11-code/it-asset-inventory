@@ -5,10 +5,22 @@ namespace App\Http\Controllers;
 use App\Models\AssetCodeRule;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
 
-class AssetCodeRuleController extends Controller
+class AssetCodeRuleController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('perm:asset_code_rules,view',   only: ['index']),
+            new Middleware('perm:asset_code_rules,create', only: ['store']),
+            new Middleware('perm:asset_code_rules,edit',   only: ['update']),
+            new Middleware('perm:asset_code_rules,delete', only: ['destroy']),
+        ];
+    }
+
     public function index()
     {
         $rules = AssetCodeRule::with('category:id,name')

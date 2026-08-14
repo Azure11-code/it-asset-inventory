@@ -4,11 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Models\Department;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
-class DepartmentController extends Controller
+class DepartmentController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('perm:departments,view',   only: ['index']),
+            new Middleware('perm:departments,create', only: ['store']),
+            new Middleware('perm:departments,edit',   only: ['update']),
+            new Middleware('perm:departments,delete', only: ['destroy']),
+        ];
+    }
+
     private const SORTABLE = ['code', 'name', 'is_active'];
 
     public function index(Request $request)

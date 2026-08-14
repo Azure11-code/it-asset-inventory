@@ -10,6 +10,9 @@ import EmptyState from '@/Components/EmptyState.vue';
 import Badge from '@/Components/Badge.vue';
 import Combobox from '@/Components/Combobox.vue';
 import { PlusIcon, PencilSquareIcon, TrashIcon, UserGroupIcon } from '@heroicons/vue/24/outline';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const props = defineProps({
     signatories: Array,
@@ -71,7 +74,7 @@ const doDelete = () => router.delete(`/signatories/${toDelete.value.id}`, {
         <template #header>
             <PageHeader title="Signatories" subtitle="People who sign the Accountability Agreement Form (Checked, Reviewed, Approved).">
                 <template #actions>
-                    <button class="btn-primary" @click="openCreate()">
+                    <button v-if="can('signatories', 'create')" class="btn-primary" @click="openCreate()">
                         <PlusIcon class="h-4 w-4" /> Add Signatory
                     </button>
                 </template>
@@ -84,7 +87,7 @@ const doDelete = () => router.delete(`/signatories/${toDelete.value.id}`, {
                 description="Add IT staff and management who sign the Accountability Agreement Form."
                 :icon="UserGroupIcon"
             >
-                <button class="btn-primary" @click="openCreate()">
+                <button v-if="can('signatories', 'create')" class="btn-primary" @click="openCreate()">
                     <PlusIcon class="h-4 w-4" /> Add your first signatory
                 </button>
             </EmptyState>
@@ -97,7 +100,7 @@ const doDelete = () => router.delete(`/signatories/${toDelete.value.id}`, {
                         <Badge :tone="roleTone[role.value]" dot>{{ role.label }}</Badge>
                         <span class="text-xs text-slate-500">{{ grouped[role.value]?.length || 0 }}</span>
                     </div>
-                    <button class="btn-ghost" title="Add to this group" @click="openCreate(role.value)">
+                    <button v-if="can('signatories', 'create')" class="btn-ghost" title="Add to this group" @click="openCreate(role.value)">
                         <PlusIcon class="h-4 w-4" />
                     </button>
                 </div>
@@ -111,8 +114,8 @@ const doDelete = () => router.delete(`/signatories/${toDelete.value.id}`, {
                             </div>
                         </div>
                         <div class="inline-flex gap-1">
-                            <button class="btn-ghost" @click="openEdit(s)"><PencilSquareIcon class="h-4 w-4" /></button>
-                            <button class="btn-ghost-danger" @click="confirmDelete(s)"><TrashIcon class="h-4 w-4" /></button>
+                            <button v-if="can('signatories', 'edit')" class="btn-ghost" @click="openEdit(s)"><PencilSquareIcon class="h-4 w-4" /></button>
+                            <button v-if="can('signatories', 'delete')" class="btn-ghost-danger" @click="confirmDelete(s)"><TrashIcon class="h-4 w-4" /></button>
                         </div>
                     </li>
                 </ul>

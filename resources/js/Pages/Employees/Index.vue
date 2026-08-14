@@ -13,6 +13,9 @@ import SortableTh from '@/Components/SortableTh.vue';
 import Combobox from '@/Components/Combobox.vue';
 import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, UsersIcon, CpuChipIcon, ArrowTopRightOnSquareIcon, DocumentTextIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 import { Link } from '@inertiajs/vue3';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const EMPLOYEE_STATUSES = [
     { value: 'active',   label: 'Active' },
@@ -88,7 +91,7 @@ const openEdit = (row) => {
     form.position = row.position ?? '';
     form.department_id = row.department_id ?? '';
     form.location_id = row.location_id ?? '';
-    form.date_hired = row.date_hired ?? '';
+    form.date_hired = row.date_hired ? String(row.date_hired).substring(0, 10) : '';
     form.status = row.status ?? 'active';
     showModal.value = true;
 };
@@ -148,7 +151,7 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
         <template #header>
             <PageHeader title="Employees" subtitle="Staff who use and own IT assets.">
                 <template #actions>
-                    <button class="btn-primary" @click="openCreate">
+                    <button v-if="can('employees', 'create')" class="btn-primary" @click="openCreate">
                         <PlusIcon class="h-4 w-4" /> Add Employee
                     </button>
                 </template>
@@ -171,7 +174,7 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
                 description="Add your staff so you can assign and track IT assets."
                 :icon="UsersIcon"
             >
-                <button class="btn-primary" @click="openCreate">
+                <button v-if="can('employees', 'create')" class="btn-primary" @click="openCreate">
                     <PlusIcon class="h-4 w-4" /> Add your first employee
                 </button>
             </EmptyState>
@@ -220,14 +223,14 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
                                 <td><Badge :tone="statusTone[row.status]" dot>{{ row.status }}</Badge></td>
                                 <td class="cell-right">
                                     <div class="inline-flex items-center gap-1">
-                                        <a v-if="row.held_assets_count > 0"
+                                        <a v-if="row.held_assets_count > 0 && can('accountability', 'print')"
                                            :href="`/employees/${row.id}/accountability.docx`"
                                            class="btn-ghost" title="Download Accountability Form (.docx)">
                                             <DocumentTextIcon class="h-4 w-4" />
                                         </a>
                                         <button class="btn-ghost" title="View held assets" @click="openAssets(row)"><CpuChipIcon class="h-4 w-4" /></button>
-                                        <button class="btn-ghost" title="Edit" @click="openEdit(row)"><PencilSquareIcon class="h-4 w-4" /></button>
-                                        <button class="btn-ghost-danger" title="Delete" @click="confirmDelete(row)"><TrashIcon class="h-4 w-4" /></button>
+                                        <button v-if="can('employees', 'edit')" class="btn-ghost" title="Edit" @click="openEdit(row)"><PencilSquareIcon class="h-4 w-4" /></button>
+                                        <button v-if="can('employees', 'delete')" class="btn-ghost-danger" title="Delete" @click="confirmDelete(row)"><TrashIcon class="h-4 w-4" /></button>
                                     </div>
                                 </td>
                             </tr>
@@ -324,11 +327,12 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
                                 <td><Badge :tone="assetStatusTone[a.current_status]" dot>{{ a.current_status }}</Badge></td>
                                 <td class="cell-right">
                                     <div class="inline-flex items-center gap-1">
-                                        <a :href="`/accountability/${viewingEmployee.id}/download?asset_id=${a.id}`"
+                                        <a v-if="can('accountability', 'print')"
+                                           :href="`/accountability/${viewingEmployee.id}/download?asset_id=${a.id}`"
                                            class="btn-ghost" title="Download Accountability Form for this device only">
                                             <ArrowDownTrayIcon class="h-4 w-4" />
                                         </a>
-                                        <Link :href="`/assets/${a.id}`" class="btn-ghost" title="Open asset">
+                                        <Link v-if="can('assets', 'view')" :href="`/assets/${a.id}`" class="btn-ghost" title="Open asset">
                                             <ArrowTopRightOnSquareIcon class="h-4 w-4" />
                                         </Link>
                                     </div>
@@ -339,7 +343,7 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
                 </div>
             </div>
             <div class="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3">
-                <a v-if="viewingEmployee && assetsList.length > 0"
+                <a v-if="viewingEmployee && assetsList.length > 0 && can('accountability', 'print')"
                    :href="`/employees/${viewingEmployee.id}/accountability.docx`"
                    class="btn-secondary">
                     <DocumentTextIcon class="h-4 w-4" /> Accountability Form

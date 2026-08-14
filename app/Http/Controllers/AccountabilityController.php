@@ -6,11 +6,21 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Services\AccountabilityDocxGenerator;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-class AccountabilityController extends Controller
+class AccountabilityController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('perm:accountability,view',  only: ['index']),
+            new Middleware('perm:accountability,print', only: ['download']),
+        ];
+    }
+
     private const SORT_MAP = [
         'employee'   => 'employees.last_name',
         'department' => 'departments.name',

@@ -9,6 +9,9 @@ import Badge from '@/Components/Badge.vue';
 import SortableTh from '@/Components/SortableTh.vue';
 import Combobox from '@/Components/Combobox.vue';
 import { PlusIcon, EyeIcon, MagnifyingGlassIcon, ClipboardDocumentCheckIcon } from '@heroicons/vue/24/outline';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const props = defineProps({ permits: Object, filters: Object });
 
@@ -54,7 +57,7 @@ const sortExtras = computed(() => ({
         <template #header>
             <PageHeader title="Permits to Bring Asset" subtitle="Authorize employees to bring assets off-premises.">
                 <template #actions>
-                    <Link href="/permits/create" class="btn-primary">
+                    <Link v-if="can('permits', 'create')" href="/permits/create" class="btn-primary">
                         <PlusIcon class="h-4 w-4" /> New Permit
                     </Link>
                 </template>
@@ -76,7 +79,7 @@ const sortExtras = computed(() => ({
                 description="Create a Permit to Bring Asset when an employee needs to take a device off-site."
                 :icon="ClipboardDocumentCheckIcon"
             >
-                <Link href="/permits/create" class="btn-primary">
+                <Link v-if="can('permits', 'create')" href="/permits/create" class="btn-primary">
                     <PlusIcon class="h-4 w-4" /> Create your first permit
                 </Link>
             </EmptyState>

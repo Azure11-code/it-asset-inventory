@@ -4,11 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Models\Location;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
-class LocationController extends Controller
+class LocationController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('perm:locations,view',   only: ['index']),
+            new Middleware('perm:locations,create', only: ['store']),
+            new Middleware('perm:locations,edit',   only: ['update']),
+            new Middleware('perm:locations,delete', only: ['destroy']),
+        ];
+    }
+
     private const SORTABLE = ['name', 'description', 'is_active'];
 
     public function index(Request $request)

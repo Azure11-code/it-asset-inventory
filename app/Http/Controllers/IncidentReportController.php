@@ -7,10 +7,23 @@ use App\Models\Employee;
 use App\Models\IncidentReport;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Inertia\Inertia;
 
-class IncidentReportController extends Controller
+class IncidentReportController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('perm:incidents,view',   only: ['index', 'show']),
+            new Middleware('perm:incidents,create', only: ['create', 'store']),
+            new Middleware('perm:incidents,edit',   only: ['edit', 'update']),
+            new Middleware('perm:incidents,delete', only: ['destroy']),
+            new Middleware('perm:incidents,print',  only: ['docx']),
+        ];
+    }
+
     public function index(Request $request)
     {
         $reports = IncidentReport::query()

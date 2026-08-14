@@ -11,6 +11,9 @@ import Combobox from '@/Components/Combobox.vue';
 import Modal from '@/Components/Modal.vue';
 import { MagnifyingGlassIcon, DocumentTextIcon, ArrowDownTrayIcon, CpuChipIcon, ArrowTopRightOnSquareIcon, ClipboardDocumentCheckIcon } from '@heroicons/vue/24/outline';
 import { Link } from '@inertiajs/vue3';
+import { usePermissions } from '@/composables/usePermissions';
+
+const { can } = usePermissions();
 
 const props = defineProps({
     employees: Object,
@@ -148,7 +151,7 @@ const assetStatusTone = {
                                         <button class="btn-ghost" title="View held assets" @click="openAssets(row)">
                                             <CpuChipIcon class="h-4 w-4" />
                                         </button>
-                                        <a :href="`/accountability/${row.id}/download`" class="btn-primary !py-1 !px-2 text-xs" title="Download Accountability Form (.docx)">
+                                        <a v-if="can('accountability', 'print')" :href="`/accountability/${row.id}/download`" class="btn-primary !py-1 !px-2 text-xs" title="Download Accountability Form (.docx)">
                                             <ArrowDownTrayIcon class="h-4 w-4" /> <span class="hidden sm:inline">Download</span>
                                         </a>
                                     </div>

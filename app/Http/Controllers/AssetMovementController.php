@@ -5,12 +5,22 @@ namespace App\Http\Controllers;
 use App\Models\Asset;
 use App\Models\AssetMovement;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-class AssetMovementController extends Controller
+class AssetMovementController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('perm:assets,edit',   only: ['issue', 'returnFromHolder', 'transfer', 'updateMovement']),
+            new Middleware('perm:assets,delete', only: ['destroyMovement']),
+        ];
+    }
+
     public function issue(Request $request, Asset $asset)
     {
         if ($asset->current_status === 'assigned') {
