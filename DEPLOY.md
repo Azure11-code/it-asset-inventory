@@ -131,8 +131,10 @@ docker compose exec app php artisan db:seed --force
 # Create symlink for public storage (uploads, images)
 docker compose exec app php artisan storage:link
 
-# Ensure backups directory is writable (used by in-app backup feature)
-docker compose exec app mkdir -p storage/app/backups
+# Ensure backups + attachments directories are writable
+# (auto-handled by entrypoint.sh on container start — this is just for the first-time setup)
+docker compose exec app mkdir -p storage/app/backups storage/app/attachments
+docker compose exec app chown -R www-data:www-data storage/app
 docker compose exec app chmod -R 775 storage/app
 
 # Clear all caches

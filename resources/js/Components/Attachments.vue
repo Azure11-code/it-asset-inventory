@@ -9,13 +9,15 @@ import {
 } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
-    entity:      { type: String, required: true }, // "recommendations" | "incidents" | "permits"
+    entity:      { type: String, required: true }, // "recommendations" | "incidents" | "permits" | "accountability"
     entityId:    { type: [Number, String], required: true },
-    resourceKey: { type: String, required: true }, // maps to permission resource ("recommendations" etc.)
+    resourceKey: { type: String, required: true }, // maps to permission resource
     attachments: { type: Array,  default: () => [] },
     title:       { type: String, default: 'Supporting Documents' },
     subtitle:    { type: String, default: 'Scanned signed copies, receipts, proof photos, and related files.' },
 });
+
+const emit = defineEmits(['updated']);
 
 const { can } = usePermissions();
 const canUpload = computed(() => can(props.resourceKey, 'edit'));
@@ -36,10 +38,12 @@ const submitUpload = () => {
     upload.post(`/attachments/${props.entity}/${props.entityId}`, {
         forceFormData: true,
         preserveScroll: true,
+        preserveState: true,
         onSuccess: () => {
             upload.reset('file', 'label');
             showUpload.value = false;
             if (fileInput.value) fileInput.value.value = '';
+            emit('updated');
         },
     });
 };
@@ -50,7 +54,9 @@ const doDelete = () => {
     if (!toDelete.value) return;
     router.delete(`/attachments/${props.entity}/${props.entityId}/${toDelete.value.id}`, {
         preserveScroll: true,
-        onFinish: () => { toDelete.value = null; },
+        preserveState: true,
+        onSuccess: () => emit('updated'),
+        onFinish:  () => { toDelete.value = null; },
     });
 };
 

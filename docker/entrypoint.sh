@@ -24,6 +24,8 @@ echo "MySQL port reachable."
 php artisan migrate --force || true
 php artisan storage:link || true
 
+mkdir -p storage/app/attachments storage/app/backups
 chown -R www-data:www-data storage bootstrap/cache || true
+chmod -R 775 storage bootstrap/cache || true
 
 exec "$@"

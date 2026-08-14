@@ -16,6 +16,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ConditionController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\IncidentReportController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\RecommendationController;
@@ -278,7 +279,7 @@ Route::middleware('auth')->group(function () {
         ->only(['index', 'store', 'update', 'destroy'])
         ->parameters(['asset-code-rules' => 'rule']);
     Route::get('asset-code-rules/{rule}/next', [AssetCodeRuleController::class, 'next'])->name('asset-code-rules.next');
-    Route::resource('employees',   EmployeeController::class)->only(['index', 'store', 'update', 'destroy']);
+    Route::resource('employees',   EmployeeController::class)->only(['index', 'store', 'update', 'destroy', 'show']);
     Route::get('employees/{employee}/assets', [EmployeeController::class, 'assets'])->name('employees.assets');
     Route::get('employees/{employee}/accountability.docx', [EmployeeController::class, 'accountability'])->name('employees.accountability');
     Route::resource('signatories', SignatoryController::class)->only(['index', 'store', 'update', 'destroy']);
@@ -292,6 +293,10 @@ Route::middleware('auth')->group(function () {
 
     Route::get('accountability',                            [AccountabilityController::class, 'index'])->name('accountability.index');
     Route::get('accountability/{employee}/download',        [AccountabilityController::class, 'download'])->name('accountability.download');
+    Route::get('accountability/{employee}/attachments',     [AccountabilityController::class, 'attachments'])->name('accountability.attachments');
+
+    // Files gallery — grid view of every uploaded attachment across all entities
+    Route::get('gallery',                                   [GalleryController::class, 'index'])->name('gallery.index');
 
     // Backups (admin only)
     Route::middleware('admin')->group(function () {
@@ -309,9 +314,10 @@ Route::middleware('auth')->group(function () {
     // AI Assistant
     Route::post('ai/chat',          [AiChatController::class, 'chat'])->name('ai.chat');
 
-    // Polymorphic attachments (supports recommendations, incidents, permits)
+    // Polymorphic attachments (supports recommendations, incidents, permits, accountability)
     Route::post('attachments/{entity}/{id}',                              [AttachmentController::class, 'store'])->name('attachments.store');
     Route::get('attachments/{entity}/{id}/{attachment}/download',         [AttachmentController::class, 'download'])->name('attachments.download');
+    Route::get('attachments/{entity}/{id}/{attachment}/preview',          [AttachmentController::class, 'preview'])->name('attachments.preview');
     Route::delete('attachments/{entity}/{id}/{attachment}',               [AttachmentController::class, 'destroy'])->name('attachments.destroy');
 
     Route::get('permits/{permit}/docx',                  [PermitController::class, 'docx'])->name('permits.docx');

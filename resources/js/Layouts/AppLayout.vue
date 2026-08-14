@@ -28,6 +28,7 @@ import {
     CircleStackIcon,
     ChevronDoubleLeftIcon,
     ChevronDoubleRightIcon,
+    PhotoIcon,
 } from '@heroicons/vue/24/outline';
 import OnboardingTour from '@/Components/OnboardingTour.vue';
 import GlobalSearch from '@/Components/GlobalSearch.vue';
@@ -74,6 +75,7 @@ const rawDocumentsNav = computed(() => [
     { name: 'Permits',          href: '/permits',         icon: ClipboardDocumentCheckIcon, count: formatCount(counts.value.permits),         tour: 'nav-permits', resource: 'permits' },
     { name: 'Incident Reports', href: '/incidents',       icon: ExclamationTriangleIcon,    count: formatCount(counts.value.incidents),        resource: 'incidents' },
     { name: 'Recommendations',  href: '/recommendations', icon: DocumentTextIcon,           count: formatCount(counts.value.recommendations),  resource: 'recommendations' },
+    { name: 'Gallery',          href: '/gallery',         icon: PhotoIcon,                                                                     galleryCheck: true },
     { name: 'Backups',          href: '/backups',         icon: CircleStackIcon,                                                              adminOnly: true },
 ]);
 
@@ -88,8 +90,9 @@ const rawMasterNav = computed(() => [
 ]);
 
 const filterNav = (items) => items.filter(i => {
-    if (i.adminOnly) return isAdmin.value;
-    if (i.resource)  return can(i.resource, 'view');
+    if (i.adminOnly)    return isAdmin.value;
+    if (i.galleryCheck) return can('recommendations', 'view') || can('incidents', 'view') || can('permits', 'view') || can('accountability', 'view');
+    if (i.resource)     return can(i.resource, 'view');
     return true;
 });
 

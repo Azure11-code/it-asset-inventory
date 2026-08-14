@@ -9,7 +9,8 @@ import Badge from '@/Components/Badge.vue';
 import SortableTh from '@/Components/SortableTh.vue';
 import Combobox from '@/Components/Combobox.vue';
 import Modal from '@/Components/Modal.vue';
-import { MagnifyingGlassIcon, DocumentTextIcon, ArrowDownTrayIcon, CpuChipIcon, ArrowTopRightOnSquareIcon, ClipboardDocumentCheckIcon } from '@heroicons/vue/24/outline';
+import Attachments from '@/Components/Attachments.vue';
+import { MagnifyingGlassIcon, DocumentTextIcon, ArrowDownTrayIcon, CpuChipIcon, ArrowTopRightOnSquareIcon, ClipboardDocumentCheckIcon, PaperClipIcon } from '@heroicons/vue/24/outline';
 import { Link } from '@inertiajs/vue3';
 import { usePermissions } from '@/composables/usePermissions';
 
@@ -91,6 +92,42 @@ const assetStatusTone = {
     retired:    'slate',
     replaced:   'slate',
 };
+
+// ── Signed-forms attachments modal ──
+const showFilesModal = ref(false);
+const filesEmployee = ref(null);
+const filesList = ref([]);
+const filesLoading = ref(false);
+
+const openFiles = async (row) => {
+    filesEmployee.value = row;
+    showFilesModal.value = true;
+    filesLoading.value = true;
+    filesList.value = [];
+    try {
+        const res  = await fetch(`/accountability/${row.id}/attachments`, { headers: { Accept: 'application/json' } });
+        const data = await res.json();
+        filesList.value = data.attachments || [];
+    } finally {
+        filesLoading.value = false;
+    }
+};
+
+// Refresh attachments list after upload/delete (Inertia posts to the polymorphic route
+// and returns to this page, but the modal state is client-side, so we re-fetch).
+const reloadFiles = async () => {
+    if (!filesEmployee.value) return;
+    filesLoading.value = true;
+    try {
+        const res  = await fetch(`/accountability/${filesEmployee.value.id}/attachments`, { headers: { Accept: 'application/json' } });
+        const data = await res.json();
+        filesList.value = data.attachments || [];
+    } finally {
+        filesLoading.value = false;
+    }
+    // Also reload the page so the "Files" count badge on the row updates.
+    router.reload({ only: ['employees'], preserveScroll: true, preserveState: true });
+};
 </script>
 
 <template>
@@ -148,6 +185,13 @@ const assetStatusTone = {
                                 </td>
                                 <td class="cell-right">
                                     <div class="inline-flex items-center gap-1">
+                                        <button class="btn-ghost relative" title="Signed accountability files" @click="openFiles(row)">
+                                            <PaperClipIcon class="h-4 w-4" />
+                                            <span
+                                                v-if="row.attachments_count"
+                                                class="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[9px] font-semibold text-white"
+                                            >{{ row.attachments_count }}</span>
+                                        </button>
                                         <button class="btn-ghost" title="View held assets" @click="openAssets(row)">
                                             <CpuChipIcon class="h-4 w-4" />
                                         </button>
@@ -218,6 +262,26 @@ const assetStatusTone = {
                 </a>
                 <span v-else></span>
                 <button type="button" class="btn-secondary" @click="showAssetsModal = false">Close</button>
+            </div>
+        </Modal>
+
+        <!-- Signed accountability files modal -->
+        <Modal :show="showFilesModal" max-width="2xl" :title="filesEmployee ? `Signed accountability files — ${filesEmployee.first_name} ${filesEmployee.last_name}` : 'Signed Files'" @close="showFilesModal = false">
+            <div class="p-4">
+                <div v-if="filesLoading" class="py-8 text-center text-sm text-slate-500">Loading…</div>
+                <Attachments
+                    v-else
+                    entity="accountability"
+                    :entity-id="filesEmployee?.id"
+                    resource-key="accountability"
+                    :attachments="filesList"
+                    title="Signed accountability documents"
+                    subtitle="Upload the scanned signed copy of this employee's accountability form. Accepts PDF or image (JPG/PNG)."
+                    @updated="reloadFiles"
+                />
+            </div>
+            <div class="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50 px-5 py-3">
+                <button type="button" class="btn-secondary" @click="showFilesModal = false">Close</button>
             </div>
         </Modal>
     </AppLayout>

@@ -11,7 +11,7 @@ import EmptyState from '@/Components/EmptyState.vue';
 import Badge from '@/Components/Badge.vue';
 import SortableTh from '@/Components/SortableTh.vue';
 import Combobox from '@/Components/Combobox.vue';
-import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, UsersIcon, CpuChipIcon, ArrowTopRightOnSquareIcon, DocumentTextIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
+import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, UsersIcon, CpuChipIcon, ArrowTopRightOnSquareIcon, DocumentTextIcon, ArrowDownTrayIcon, EyeIcon } from '@heroicons/vue/24/outline';
 import { Link } from '@inertiajs/vue3';
 import { usePermissions } from '@/composables/usePermissions';
 
@@ -227,6 +227,9 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
                                 <td><Badge :tone="statusTone[row.status]" dot>{{ row.status }}</Badge></td>
                                 <td class="cell-right">
                                     <div class="inline-flex items-center gap-1">
+                                        <Link :href="`/employees/${row.id}`" class="btn-ghost" title="View full profile">
+                                            <EyeIcon class="h-4 w-4" />
+                                        </Link>
                                         <a v-if="row.held_assets_count > 0 && can('accountability', 'print')"
                                            :href="`/employees/${row.id}/accountability.docx`"
                                            class="btn-ghost" title="Download Accountability Form (.docx)">

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAttachments;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Employee extends Model
 {
-    use HasFactory;
+    use HasFactory, HasAttachments;
 
     protected $fillable = [
         'employee_no', 'first_name', 'middle_name', 'last_name',
@@ -42,5 +43,37 @@ class Employee extends Model
     public function heldAssets(): HasMany
     {
         return $this->hasMany(Asset::class, 'current_holder_id');
+    }
+
+    // ── Reverse relationships (for the employee Show/relationships page) ──
+
+    public function movementsIn(): HasMany
+    {
+        return $this->hasMany(AssetMovement::class, 'to_employee_id');
+    }
+
+    public function movementsOut(): HasMany
+    {
+        return $this->hasMany(AssetMovement::class, 'from_employee_id');
+    }
+
+    public function permits(): HasMany
+    {
+        return $this->hasMany(AssetPermit::class, 'employee_id');
+    }
+
+    public function permitsRequested(): HasMany
+    {
+        return $this->hasMany(AssetPermit::class, 'requested_by_employee_id');
+    }
+
+    public function incidentReports(): HasMany
+    {
+        return $this->hasMany(IncidentReport::class, 'end_user_employee_id');
+    }
+
+    public function recommendationsFiled(): HasMany
+    {
+        return $this->hasMany(Recommendation::class, 'requestor_employee_id');
     }
 }

@@ -23,7 +23,7 @@ return [
         ['key' => 'assets',           'label' => 'Assets',            'actions' => ['view', 'create', 'edit', 'delete', 'print', 'export', 'import']],
         ['key' => 'scan',             'label' => 'Scan',              'actions' => ['view']],
         ['key' => 'employees',        'label' => 'Employees',         'actions' => ['view', 'create', 'edit', 'delete', 'export', 'import']],
-        ['key' => 'accountability',   'label' => 'Accountability',    'actions' => ['view', 'print']],
+        ['key' => 'accountability',   'label' => 'Accountability',    'actions' => ['view', 'edit', 'print']],
         ['key' => 'permits',          'label' => 'Permits',           'actions' => ['view', 'create', 'edit', 'delete', 'print']],
         ['key' => 'incidents',        'label' => 'Incident Reports',  'actions' => ['view', 'create', 'edit', 'delete', 'print']],
         ['key' => 'recommendations',  'label' => 'Recommendations',   'actions' => ['view', 'create', 'edit', 'delete', 'print']],

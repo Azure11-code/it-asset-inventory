@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Attachment;
 use App\Models\AssetPermit;
+use App\Models\Employee;
 use App\Models\IncidentReport;
 use App\Models\Recommendation;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ class AttachmentController extends Controller
         'recommendations' => ['model' => Recommendation::class, 'perm' => 'recommendations', 'action' => 'edit'],
         'incidents'       => ['model' => IncidentReport::class,  'perm' => 'incidents',       'action' => 'edit'],
         'permits'         => ['model' => AssetPermit::class,     'perm' => 'permits',         'action' => 'edit'],
+        'accountability'  => ['model' => Employee::class,        'perm' => 'accountability',  'action' => 'edit'],
     ];
 
     private const MAX_MB = 15;
@@ -72,6 +74,30 @@ class AttachmentController extends Controller
             $attachment->absolutePath(),
             $attachment->original_name,
             ['Content-Type' => $attachment->mime_type ?: 'application/octet-stream']
+        );
+    }
+
+    /**
+     * Serve the file inline (no attachment disposition) — used by the Gallery page
+     * for image thumbnails and lightbox previews.
+     */
+    public function preview(Request $request, string $entity, int $id, Attachment $attachment): BinaryFileResponse
+    {
+        [$modelClass, $perm] = $this->resolve($entity);
+        $this->ensurePerm($request, $perm, 'view');
+
+        abort_unless(
+            $attachment->attachable_type === $modelClass && $attachment->attachable_id === $id,
+            404
+        );
+        abort_unless(Storage::disk($attachment->disk)->exists($attachment->path), 404);
+
+        return response()->file(
+            $attachment->absolutePath(),
+            [
+                'Content-Type'  => $attachment->mime_type ?: 'application/octet-stream',
+                'Cache-Control' => 'private, max-age=3600',
+            ]
         );
     }
 
