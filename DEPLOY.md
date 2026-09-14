@@ -192,6 +192,61 @@ Sa production PC's LAN IP:
 
 ---
 
+## Step 9 (optional) — Expose via Cloudflare Tunnel
+
+Gamitin ito kung gusto mong ma-access ang app mula labas ng LAN (public HTTPS URL, trusted cert, camera scan works) **nang hindi nagbubukas ng router ports**.
+
+The backend is already Cloudflare-ready:
+
+- `bootstrap/app.php` trusts `X-Forwarded-*` headers → tamang `https` links, redirects, at real client IP.
+- `AppServiceProvider` forces `https://` URLs and a **secure** session cookie whenever `APP_URL` starts with `https://`.
+- `docker/nginx/cloudflare.conf` restores the visitor IP from `CF-Connecting-IP` (para tama ang nginx logs / rate-limits).
+- `docker-compose.yml` has a `cloudflared` service under the `cloudflare` profile.
+
+### 9.1 — Create the tunnel
+
+1. Cloudflare dashboard → **Zero Trust → Networks → Tunnels → Create a tunnel** (Cloudflared connector).
+2. Copy the **tunnel token** (mahabang string after `--token`).
+3. Add a **Public Hostname**, e.g. `assets.yourdomain.com`
+   - Service **Type:** `HTTP`
+   - **URL:** `nginx:80`  ← container name; same docker network
+4. SSL/TLS mode sa Cloudflare domain: **Full** or **Flexible** ay OK (tunnel is already encrypted).
+
+### 9.2 — Configure `.env`
+
+```env
+APP_URL=https://assets.yourdomain.com
+CLOUDFLARE_TUNNEL_TOKEN=eyJhIjoi...   # from step 9.1
+```
+
+> `SESSION_SECURE_COOKIE` is auto-enabled when `APP_URL` is `https://`. Set it explicitly only if you need to override.
+
+### 9.3 — Build assets & start with the profile
+
+```bash
+# Production assets — the Vite dev server (node) does NOT work through the tunnel
+docker compose exec node npm run build
+docker compose stop node
+rm -f public/hot
+
+# Start everything + cloudflared
+docker compose --profile cloudflare up -d
+
+# Verify tunnel is connected
+docker compose logs -f cloudflared
+```
+
+Kapag may `Registered tunnel connection` sa logs, open `https://assets.yourdomain.com`.
+
+### Notes
+
+- **Access control:** Since public na ang URL, i-recommend na i-enable ang **Cloudflare Access** (Zero Trust → Access → Applications) para may email/OTP gate bago makarating sa login page.
+- **Upload limit:** Cloudflare free plan caps request body at **100 MB**; nginx is set to 64 MB so OK.
+- **LAN access remains:** `http://<LAN-IP>:8081` and `https://<LAN-IP>:8443` still work as before.
+- **Stop the tunnel only:** `docker compose --profile cloudflare stop cloudflared`
+
+---
+
 ## Post-deployment configuration
 
 ### User accounts & role-based access
