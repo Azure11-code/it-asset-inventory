@@ -34,7 +34,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 
 COPY composer.json composer.lock* ./
-RUN composer update --no-scripts --no-autoloader --prefer-dist --no-interaction
+RUN composer install --no-scripts --no-autoloader --prefer-dist --no-interaction --no-security-blocking
 
 COPY . .
 
