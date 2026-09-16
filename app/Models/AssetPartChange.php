@@ -2,13 +2,20 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AssetPartChange extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable;
+
+    /** Every field a search keyword may hit. @see Searchable */
+    protected static array $searchable = [
+        'part_name', 'old_value', 'new_value', 'reason', 'notes',
+        'asset.asset_tag', 'asset.serial_number',
+    ];
 
     protected $fillable = [
         'asset_id', 'incident_report_id', 'recommendation_id',

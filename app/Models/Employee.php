@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasAttachments;
+use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Employee extends Model
 {
-    use HasFactory, HasAttachments;
+    use HasAttachments, HasFactory, Searchable;
+
+    /** Every field a search keyword may hit. @see Searchable */
+    protected static array $searchable = [
+        'employee_no', 'first_name', 'middle_name', 'last_name',
+        'concat:first_name,middle_name,last_name',
+        'email', 'contact_no', 'position', 'notes', 'status',
+        'department.name', 'department.code',
+        'location.name', 'location.building', 'location.floor', 'location.room',
+    ];
 
     protected $fillable = [
         'employee_no', 'first_name', 'middle_name', 'last_name',

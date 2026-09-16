@@ -30,10 +30,8 @@ class BrandController extends Controller implements HasMiddleware
         $direction = $request->direction === 'desc' ? 'desc' : 'asc';
 
         $brands = Brand::query()
-            ->when($request->search, fn ($q, $search) =>
-                $q->where(fn ($w) => $w->where('name', 'like', "%{$search}%")
-                                       ->orWhere('slug', 'like', "%{$search}%"))
-            )
+            ->when($request->search, fn ($q, $s) => $q->search($s))
+
             ->orderBy($sort, $direction)
             ->paginate(10)
             ->withQueryString();

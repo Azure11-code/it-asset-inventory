@@ -28,10 +28,8 @@ class IncidentReportController extends Controller implements HasMiddleware
     {
         $reports = IncidentReport::query()
             ->with(['asset:id,asset_tag', 'endUser:id,first_name,middle_name,last_name'])
-            ->when($request->search, fn ($q, $s) =>
-                $q->where(fn ($w) => $w->where('ir_no', 'like', "%{$s}%")
-                                       ->orWhere('reported_problem', 'like', "%{$s}%"))
-            )
+            ->when($request->search, fn ($q, $s) => $q->search($s))
+
             ->when($request->status, fn ($q, $s) => $q->where('status', $s))
             ->latest('id')
             ->paginate(15)

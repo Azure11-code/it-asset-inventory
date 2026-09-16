@@ -42,11 +42,8 @@ class PermitController extends Controller implements HasMiddleware
         $query = AssetPermit::query()
             ->select('asset_permits.*')
             ->with(['employee:id,first_name,middle_name,last_name', 'items'])
-            ->when($request->search, fn ($q, $s) =>
-                $q->where(fn ($w) => $w->where('permit_no', 'like', "%{$s}%")
-                                       ->orWhere('destination', 'like', "%{$s}%")
-                                       ->orWhere('purpose', 'like', "%{$s}%"))
-            )
+            ->when($request->search, fn ($q, $s) => $q->search($s))
+
             ->when($request->status, fn ($q, $s) => $q->where('asset_permits.status', $s));
 
         if ($sortKey === 'employee') {

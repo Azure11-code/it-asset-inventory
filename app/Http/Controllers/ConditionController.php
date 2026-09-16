@@ -30,10 +30,8 @@ class ConditionController extends Controller implements HasMiddleware
         $direction = $request->direction === 'desc' ? 'desc' : 'asc';
 
         $query = Condition::query()
-            ->when($request->search, fn ($q, $s) =>
-                $q->where(fn ($w) => $w->where('name', 'like', "%{$s}%")
-                                       ->orWhere('description', 'like', "%{$s}%"))
-            )
+            ->when($request->search, fn ($q, $s) => $q->search($s))
+
             ->withCount('assets')
             ->orderBy($sort, $direction);
 

@@ -28,10 +28,8 @@ class RecommendationController extends Controller implements HasMiddleware
     {
         $recs = Recommendation::query()
             ->with(['asset:id,asset_tag', 'requestor:id,first_name,middle_name,last_name'])
-            ->when($request->search, fn ($q, $s) =>
-                $q->where(fn ($w) => $w->where('doc_no', 'like', "%{$s}%")
-                                       ->orWhere('subject', 'like', "%{$s}%"))
-            )
+            ->when($request->search, fn ($q, $s) => $q->search($s))
+
             ->when($request->status, fn ($q, $s) => $q->where('status', $s))
             ->latest('id')
             ->paginate(15)

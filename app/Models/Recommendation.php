@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasAttachments;
+use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +11,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Recommendation extends Model
 {
-    use HasFactory, HasAttachments;
+    use HasAttachments, HasFactory, Searchable;
+
+    /** Every field a search keyword may hit. @see Searchable */
+    protected static array $searchable = [
+        'doc_no', 'requestor_name', 'requestor_employee_no', 'requestor_position',
+        'requestor_department', 'thru', 'subject', 'body', 'status',
+        'asset.asset_tag', 'asset.serial_number', 'asset.model',
+        'requestor.employee_no', 'requestor.concat:first_name,middle_name,last_name',
+    ];
 
     protected $fillable = [
         'doc_no', 'report_date',

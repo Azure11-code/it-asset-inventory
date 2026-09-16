@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -9,6 +10,11 @@ use Illuminate\Support\Facades\Storage;
 
 class Attachment extends Model
 {
+    use Searchable;
+
+    /** Every field a search keyword may hit. @see Searchable */
+    protected static array $searchable = ['original_name', 'label', 'mime_type'];
+
     protected $fillable = [
         'attachable_type', 'attachable_id',
         'disk', 'path', 'original_name', 'mime_type', 'size_bytes',

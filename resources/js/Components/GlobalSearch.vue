@@ -2,9 +2,9 @@
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { router } from '@inertiajs/vue3';
 import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline';
-import {
-    CpuChipIcon, UserIcon, MapPinIcon, BuildingOffice2Icon, Squares2X2Icon, TagIcon,
-} from '@heroicons/vue/24/outline';
+import { useSearchMeta } from '@/composables/useSearchMeta';
+
+const { iconFor, toneFor } = useSearchMeta();
 
 const query = ref('');
 const groups = ref([]);
@@ -16,24 +16,6 @@ const rootEl = ref(null);
 
 let fetchTimer = null;
 let abortCtrl = null;
-
-const iconFor = (type) => ({
-    asset: CpuChipIcon,
-    employee: UserIcon,
-    location: MapPinIcon,
-    department: BuildingOffice2Icon,
-    category: Squares2X2Icon,
-    brand: TagIcon,
-}[type] || MagnifyingGlassIcon);
-
-const toneFor = (type) => ({
-    asset:      'bg-brand-50 text-brand-700',
-    employee:   'bg-sky-50 text-sky-700',
-    location:   'bg-amber-50 text-amber-700',
-    department: 'bg-emerald-50 text-emerald-700',
-    category:   'bg-indigo-50 text-indigo-700',
-    brand:      'bg-rose-50 text-rose-700',
-}[type] || 'bg-slate-100 text-slate-700');
 
 // Flatten groups → linear list of items so keyboard nav is easy.
 const flatItems = computed(() => groups.value.flatMap(g => g.items.map(it => ({ ...it, type: g.type }))));
@@ -144,7 +126,7 @@ onBeforeUnmount(() => {
                 ref="inputEl"
                 v-model="query"
                 type="search"
-                placeholder="Search assets, employees, locations…  (Ctrl+K)"
+                placeholder="Search anything — tag, serial, name, permit…  (Ctrl+K)"
                 class="w-full rounded-md border border-slate-200 bg-white pl-9 pr-16 py-2 text-sm text-slate-700 shadow-sm focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-200"
                 @focus="open = true"
                 @keydown="onKeydown"

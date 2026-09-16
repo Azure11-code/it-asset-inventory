@@ -22,11 +22,8 @@ class UserController extends Controller
 
         $users = User::query()
             ->with('permissions:id,user_id,resource,action')
-            ->when($request->search, fn ($q, $s) =>
-                $q->where(fn ($w) => $w->where('name', 'like', "%{$s}%")
-                                       ->orWhere('username', 'like', "%{$s}%")
-                                       ->orWhere('email', 'like', "%{$s}%"))
-            )
+            ->when($request->search, fn ($q, $s) => $q->search($s))
+
             ->orderBy($sort, $direction)
             ->paginate(15)
             ->withQueryString()

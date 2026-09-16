@@ -47,12 +47,8 @@ class EmployeeController extends Controller implements HasMiddleware
             ->leftJoin('locations', 'employees.location_id', '=', 'locations.id')
             ->with(['department:id,name', 'location:id,name'])
             ->withCount('heldAssets')
-            ->when($request->search, fn ($q, $search) =>
-                $q->where(fn ($w) => $w->where('first_name', 'like', "%{$search}%")
-                                       ->orWhere('last_name', 'like', "%{$search}%")
-                                       ->orWhere('employee_no', 'like', "%{$search}%")
-                                       ->orWhere('email', 'like', "%{$search}%"))
-            )
+            ->when($request->search, fn ($q, $s) => $q->search($s))
+
             ->when($request->department_id, fn ($q, $id) => $q->where('department_id', $id))
             ->when($request->status, fn ($q, $s) => $q->where('status', $s))
             ->orderBy($sortCol, $direction)

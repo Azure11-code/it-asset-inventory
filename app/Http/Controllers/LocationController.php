@@ -29,10 +29,8 @@ class LocationController extends Controller implements HasMiddleware
         $direction = $request->direction === 'desc' ? 'desc' : 'asc';
 
         $locations = Location::query()
-            ->when($request->search, fn ($q, $search) =>
-                $q->where(fn ($w) => $w->where('name', 'like', "%{$search}%")
-                                       ->orWhere('description', 'like', "%{$search}%"))
-            )
+            ->when($request->search, fn ($q, $s) => $q->search($s))
+
             ->orderBy($sort, $direction)
             ->paginate(10)
             ->withQueryString();

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasAttachments;
+use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +11,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AssetPermit extends Model
 {
-    use HasFactory, HasAttachments;
+    use HasAttachments, HasFactory, Searchable;
+
+    /** Every field a search keyword may hit. @see Searchable */
+    protected static array $searchable = [
+        'permit_no', 'employee_name', 'position_text', 'department_text',
+        'destination', 'purpose', 'approval_note', 'status',
+        'employee.employee_no', 'employee.concat:first_name,middle_name,last_name',
+        'items.description', 'items.serial_no', 'items.remarks',
+        'items.asset.asset_tag', 'items.asset.serial_number', 'items.asset.model',
+    ];
 
     protected $fillable = [
         'permit_no',

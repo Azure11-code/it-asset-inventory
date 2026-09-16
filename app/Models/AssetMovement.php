@@ -2,13 +2,23 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AssetMovement extends Model
 {
-    use HasFactory;
+    use HasFactory, Searchable;
+
+    /** Every field a search keyword may hit. @see Searchable */
+    protected static array $searchable = [
+        'type', 'reference', 'remarks',
+        'asset.asset_tag', 'asset.serial_number', 'asset.model',
+        'fromEmployee.concat:first_name,middle_name,last_name',
+        'toEmployee.concat:first_name,middle_name,last_name',
+        'fromLocation.name', 'toLocation.name',
+    ];
 
     protected $fillable = [
         'asset_id', 'type',

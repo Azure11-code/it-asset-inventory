@@ -3,10 +3,10 @@ import { ref } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
-import {
-    MagnifyingGlassIcon, CpuChipIcon, UserIcon, MapPinIcon,
-    BuildingOffice2Icon, Squares2X2Icon, TagIcon,
-} from '@heroicons/vue/24/outline';
+import { MagnifyingGlassIcon } from '@heroicons/vue/24/outline';
+import { useSearchMeta } from '@/composables/useSearchMeta';
+
+const { iconFor, toneFor } = useSearchMeta();
 
 const props = defineProps({
     query:  { type: String, default: '' },
@@ -21,25 +21,12 @@ const doSearch = () => {
     router.get('/search', { q }, { preserveState: false });
 };
 
-const iconFor = (type) => ({
-    asset: CpuChipIcon, employee: UserIcon, location: MapPinIcon,
-    department: BuildingOffice2Icon, category: Squares2X2Icon, brand: TagIcon,
-}[type] || MagnifyingGlassIcon);
-
-const toneFor = (type) => ({
-    asset:      'bg-brand-50 text-brand-700',
-    employee:   'bg-sky-50 text-sky-700',
-    location:   'bg-amber-50 text-amber-700',
-    department: 'bg-emerald-50 text-emerald-700',
-    category:   'bg-indigo-50 text-indigo-700',
-    brand:      'bg-rose-50 text-rose-700',
-}[type] || 'bg-slate-100 text-slate-700');
 </script>
 
 <template>
     <AppLayout>
         <template #header>
-            <PageHeader :title="query ? `Search results for &quot;${query}&quot;` : 'Search'" :subtitle="query ? `${total} result${total === 1 ? '' : 's'} across the system` : 'Search across assets, employees, locations, and master data.'" />
+            <PageHeader :title="query ? `Search results for &quot;${query}&quot;` : 'Search'" :subtitle="query ? `${total} result${total === 1 ? '' : 's'} across the system` : 'Search every module — assets, employees, permits, incident reports, recommendations, movements and master data.'" />
         </template>
 
         <!-- Search input -->
@@ -61,7 +48,8 @@ const toneFor = (type) => ({
         <!-- Empty query prompt -->
         <div v-if="!query" class="card p-10 text-center">
             <MagnifyingGlassIcon class="mx-auto h-10 w-10 text-slate-300" />
-            <p class="mt-3 text-sm text-slate-500">Start typing above to search assets, employees, locations, and master data.</p>
+            <p class="mt-3 text-sm text-slate-500">Start typing above to search assets, employees, permits, incident reports, recommendations, movements and master data.</p>
+            <p class="mt-2 text-xs text-slate-400">Type several keywords to narrow down — <span class="font-medium text-slate-500">dell laptop juan</span> finds Juan's Dell laptop. Wrap words in <span class="font-medium text-slate-500">"double quotes"</span> to match an exact phrase.</p>
             <p class="mt-1 text-xs text-slate-400">Tip: press <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 text-[10px] font-semibold">Ctrl</kbd> + <kbd class="rounded border border-slate-200 bg-slate-50 px-1.5 text-[10px] font-semibold">K</kbd> anywhere to open the quick search bar.</p>
         </div>
 
@@ -69,7 +57,7 @@ const toneFor = (type) => ({
         <div v-else-if="total === 0" class="card p-10 text-center">
             <MagnifyingGlassIcon class="mx-auto h-10 w-10 text-slate-300" />
             <p class="mt-3 text-sm font-semibold text-slate-700">No matches for "{{ query }}"</p>
-            <p class="mt-1 text-xs text-slate-500">Try a shorter or different keyword.</p>
+            <p class="mt-1 text-xs text-slate-500">Every keyword has to match. Try removing a word, or use fewer keywords.</p>
         </div>
 
         <!-- Grouped results — responsive grid uses full page width -->

@@ -29,10 +29,8 @@ class DepartmentController extends Controller implements HasMiddleware
         $direction = $request->direction === 'desc' ? 'desc' : 'asc';
 
         $departments = Department::query()
-            ->when($request->search, fn ($q, $search) =>
-                $q->where(fn ($w) => $w->where('name', 'like', "%{$search}%")
-                                       ->orWhere('code', 'like', "%{$search}%"))
-            )
+            ->when($request->search, fn ($q, $s) => $q->search($s))
+
             ->orderBy($sort, $direction)
             ->paginate(10)
             ->withQueryString();

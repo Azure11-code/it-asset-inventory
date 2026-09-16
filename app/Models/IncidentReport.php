@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasAttachments;
+use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +11,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class IncidentReport extends Model
 {
-    use HasFactory, HasAttachments;
+    use HasAttachments, HasFactory, Searchable;
+
+    /** Every field a search keyword may hit. @see Searchable */
+    protected static array $searchable = [
+        'ir_no', 'end_user_name', 'reported_problem', 'action_taken',
+        'findings', 'recommendation', 'status',
+        'asset.asset_tag', 'asset.serial_number', 'asset.model',
+        'endUser.employee_no', 'endUser.concat:first_name,middle_name,last_name',
+        'partChanges.part_name', 'partChanges.old_value', 'partChanges.new_value',
+    ];
 
     protected $fillable = [
         'ir_no',

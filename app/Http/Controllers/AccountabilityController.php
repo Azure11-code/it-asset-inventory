@@ -65,12 +65,7 @@ class AccountabilityController extends Controller implements HasMiddleware
             ->with(['department:id,name'])
             ->withCount(['heldAssets', 'attachments'])
             ->having('held_assets_count', '>', 0)
-            ->when($request->search, fn ($q, $s) =>
-                $q->where(fn ($w) => $w->where('first_name', 'like', "%{$s}%")
-                                       ->orWhere('last_name', 'like', "%{$s}%")
-                                       ->orWhere('employee_no', 'like', "%{$s}%")
-                                       ->orWhereRaw("CONCAT_WS(' ', first_name, last_name) LIKE ?", ["%{$s}%"]))
-            )
+            ->when($request->search, fn ($q, $s) => $q->search($s))
             ->when($request->department_id, fn ($q, $id) => $q->where('department_id', $id))
             ->orderBy($sortCol, $direction)
             ->paginate(10)

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Searchable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,21 @@ use Illuminate\Support\Carbon;
 
 class Asset extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, Searchable, SoftDeletes;
+
+    /** Every field a search keyword may hit. @see Searchable */
+    protected static array $searchable = [
+        'asset_tag', 'serial_number', 'model', 'description', 'specifications',
+        'vendor', 'notes', 'current_status',
+        'brand.name',
+        'category.name', 'category.prefix',
+        'condition.name',
+        'currentHolder.employee_no', 'currentHolder.position',
+        'currentHolder.concat:first_name,middle_name,last_name',
+        'currentLocation.name', 'currentLocation.building',
+        'currentLocation.floor', 'currentLocation.room',
+        'department.name', 'department.code',
+    ];
 
     protected $fillable = [
         'asset_tag', 'serial_number', 'model', 'description', 'specifications',

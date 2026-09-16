@@ -53,17 +53,8 @@ class AssetController extends Controller implements HasMiddleware
                 'currentHolder:id,first_name,middle_name,last_name',
                 'currentLocation:id,name',
             ])
-            ->when($request->search, fn ($q, $s) =>
-                $q->where(fn ($w) => $w->where('asset_tag', 'like', "%{$s}%")
-                                       ->orWhere('serial_number', 'like', "%{$s}%")
-                                       ->orWhere('model', 'like', "%{$s}%")
-                                       ->orWhereHas('currentHolder', fn ($h) =>
-                                           $h->where('first_name', 'like', "%{$s}%")
-                                             ->orWhere('middle_name', 'like', "%{$s}%")
-                                             ->orWhere('last_name', 'like', "%{$s}%")
-                                             ->orWhereRaw("CONCAT_WS(' ', first_name, last_name) LIKE ?", ["%{$s}%"])
-                                       ))
-            )
+            ->when($request->search, fn ($q, $s) => $q->search($s))
+
             ->when($request->status, fn ($q, $s) => $q->where('current_status', $s))
             ->when($request->category_id, fn ($q, $id) => $q->where('category_id', $id))
             ->when($request->brand_id, fn ($q, $id) => $q->where('brand_id', $id))
@@ -158,17 +149,8 @@ class AssetController extends Controller implements HasMiddleware
 
         $query = Asset::query()
             ->select('assets.*')
-            ->when($request->search, fn ($q, $s) =>
-                $q->where(fn ($w) => $w->where('asset_tag', 'like', "%{$s}%")
-                                       ->orWhere('serial_number', 'like', "%{$s}%")
-                                       ->orWhere('model', 'like', "%{$s}%")
-                                       ->orWhereHas('currentHolder', fn ($h) =>
-                                           $h->where('first_name', 'like', "%{$s}%")
-                                             ->orWhere('middle_name', 'like', "%{$s}%")
-                                             ->orWhere('last_name', 'like', "%{$s}%")
-                                             ->orWhereRaw("CONCAT_WS(' ', first_name, last_name) LIKE ?", ["%{$s}%"])
-                                       ))
-            )
+            ->when($request->search, fn ($q, $s) => $q->search($s))
+
             ->when($request->status, fn ($q, $s) => $q->where('current_status', $s))
             ->when($request->category_id, fn ($q, $id) => $q->where('category_id', $id))
             ->when($request->brand_id, fn ($q, $id) => $q->where('brand_id', $id))

@@ -63,9 +63,7 @@ class GalleryController extends Controller
         }
 
         if ($request->filled('search')) {
-            $s = $request->search;
-            $query->where(fn ($w) => $w->where('original_name', 'like', "%{$s}%")
-                                        ->orWhere('label', 'like', "%{$s}%"));
+            $query->search($request->search);
         }
 
         $paginator = $query->paginate(30)->withQueryString();
