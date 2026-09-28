@@ -10,7 +10,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 
 /**
  * AI assistant powered by Google Gemini.
@@ -26,12 +25,6 @@ use RuntimeException;
  * Tools are the ONLY way Gemini can touch the database — it cannot generate
  * or run raw SQL. Adding new capabilities means adding a new tool method.
  */
-class RateLimitedException extends RuntimeException {
-    public function __construct(public int $retryAfterSeconds, string $message = 'Rate limit exceeded') {
-        parent::__construct($message);
-    }
-}
-
 class AiAssistantService
 {
     private const MAX_TOOL_LOOPS = 12;
@@ -40,9 +33,12 @@ class AiAssistantService
 
     public function chat(string $userMessage, array $history = []): array
     {
-        $apiKey = config('services.gemini.api_key');
-        if (empty($apiKey)) {
-            throw new RuntimeException('Gemini API key is not configured. Set GEMINI_API_KEY in .env.');
+        $apiKey = trim((string) config('services.gemini.api_key'));
+        if ($apiKey === '') {
+            throw new AiServiceException(
+                'The AI assistant is not set up yet — no API key is configured. '
+                . 'An administrator has to add GEMINI_API_KEY to .env.'
+            );
         }
 
         // Build the conversation for Gemini.
@@ -115,7 +111,7 @@ class AiAssistantService
 
     private function callGemini(string $apiKey, array $contents): array
     {
-        $model = config('services.gemini.model', 'gemini-3.5-flash-lite');
+        $model = (string) config('services.gemini.model');
         $url   = sprintf(self::ENDPOINT_TEMPLATE, $model);
 
         $body = [
@@ -136,34 +132,89 @@ class AiAssistantService
 
         // Retry loop for transient errors (429 rate limit, 503 model overload).
         // We respect Gemini's suggested retryDelay when provided.
-        $lastError = null;
+        $lastStatus = null;
         for ($attempt = 0; $attempt <= self::MAX_RETRIES; $attempt++) {
-            $resp = Http::timeout(60)
-                ->withQueryParameters(['key' => $apiKey])
-                ->post($url, $body);
+            try {
+                // The key goes in a header, never the query string: URLs end up in
+                // proxy logs, browser history and exception messages.
+                $resp = Http::timeout(60)
+                    ->withHeaders(['x-goog-api-key' => $apiKey])
+                    ->post($url, $body);
+            } catch (\Illuminate\Http\Client\ConnectionException $e) {
+                Log::warning('Gemini API unreachable', ['error' => $e->getMessage()]);
+                throw new AiServiceException(
+                    'Could not reach the AI service. Check the server\'s internet connection and try again.'
+                );
+            }
 
             if ($resp->successful()) return $resp->json();
 
-            $status = $resp->status();
-            $lastError = $resp->body();
+            $status = $lastStatus = $resp->status();
 
-            // 429 = rate limit, 503 = model overloaded — worth retrying
-            if (in_array($status, [429, 503]) && $attempt < self::MAX_RETRIES) {
-                $delay = $this->extractRetryDelay($resp->json()) ?? (2 * ($attempt + 1));
-                sleep(min($delay, 20));
+            // 429 = rate limit, 5xx = overloaded/transient — worth retrying.
+            if (($status === 429 || $status >= 500) && $attempt < self::MAX_RETRIES) {
+                // Capped: a browser request is being held open for the whole wait.
+                $cap   = (int) config('services.gemini.retry_sleep_cap', 8);
+                $delay = min($this->extractRetryDelay($resp->json()) ?? (2 * ($attempt + 1)), $cap);
+                if ($delay > 0) {
+                    sleep($delay);
+                }
                 continue;
             }
 
-            Log::warning('Gemini API error', ['status' => $status, 'body' => $lastError]);
+            // Log the full body for the administrator; never return it to the browser.
+            Log::warning('Gemini API error', [
+                'status' => $status,
+                'model'  => $model,
+                'body'   => $resp->body(),
+            ]);
 
             if ($status === 429) {
                 $delay = $this->extractRetryDelay($resp->json()) ?? 30;
                 throw new RateLimitedException($delay, "Rate limit — please wait {$delay} seconds and try again.");
             }
-            throw new RuntimeException('AI service error: HTTP ' . $status . ' — ' . $lastError);
+
+            throw new AiServiceException($this->explainFailure($status, $resp->json(), $model));
         }
 
-        throw new RuntimeException('AI service error after retries: ' . $lastError);
+        throw new AiServiceException(
+            'The AI service kept failing (HTTP ' . $lastStatus . '). Please try again in a moment.'
+        );
+    }
+
+    /**
+     * Turns an upstream HTTP status into something the person in the chat window
+     * can act on. The upstream body is deliberately not included.
+     */
+    private function explainFailure(int $status, ?array $json, string $model): string
+    {
+        $reason = $json['error']['status'] ?? '';
+
+        return match (true) {
+            $status === 401 || $reason === 'UNAUTHENTICATED' =>
+                'The AI service rejected the API key. An administrator has to check GEMINI_API_KEY in .env — '
+                . 'it must be a Google AI Studio key (it starts with "AIza"), created at https://aistudio.google.com/apikey. '
+                . 'Run `php artisan ai:check` on the server to test it.',
+
+            $status === 403 =>
+                'The API key is not allowed to use the AI service. An administrator should confirm the '
+                . 'Generative Language API is enabled for that key, and that no IP or referrer restriction blocks this server.',
+
+            $status === 404 =>
+                "The AI model \"{$model}\" is not available for this API key. An administrator can set a valid "
+                . 'GEMINI_MODEL in .env — run `php artisan ai:check` on the server to list the models the key can use.',
+
+            $status === 400 =>
+                'The AI service rejected the request. This is usually a bad API key or an unsupported model — '
+                . 'run `php artisan ai:check` on the server to see which.',
+
+            $status >= 500 =>
+                'The AI service is temporarily unavailable. Please try again in a minute.',
+
+            default =>
+                "The AI service returned an unexpected error (HTTP {$status}). "
+                . 'The details are in the server log (storage/logs).',
+        };
     }
 
     /**

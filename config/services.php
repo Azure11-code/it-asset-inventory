@@ -31,9 +31,14 @@ return [
         ],
     ],
 
+    // The single source of truth for the AI assistant's model — do not repeat
+    // this fallback in code. `php artisan ai:check` lists what the key can use.
     'gemini' => [
         'api_key' => env('GEMINI_API_KEY'),
         'model'   => env('GEMINI_MODEL', 'gemini-3.5-flash'),
+        // Longest pause between retries, in seconds. A browser request waits
+        // this out, so keep it short even when Google asks for longer.
+        'retry_sleep_cap' => (int) env('GEMINI_RETRY_SLEEP_CAP', 8),
     ],
 
 ];

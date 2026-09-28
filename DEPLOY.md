@@ -55,9 +55,15 @@ DB_ROOT_PASSWORD=root
 
 # ── AI Assistant (optional — floating chat widget uses Google Gemini) ──
 # Kunin dito: https://aistudio.google.com/apikey (free — 15 requests/min quota)
+# DAPAT AI Studio key ito — nagsisimula sa "AIza", 39 characters. Ang key na galing
+# sa ibang Google product (hal. nagsisimula sa "AQ.") ay hindi tatanggapin — HTTP 401.
 # Kung wala pa, skip mo muna — magana pa rin ang app, chat widget lang mag-e-error.
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.5-flash-lite
+
+# Pagkatapos mag-set: patakbuhin ito para ma-verify ang key at makita ang
+# listahan ng models na pwede nitong gamitin:
+#   docker compose exec app php artisan ai:check
 ```
 
 **Para malaman yung LAN IP ng target PC:**
@@ -302,11 +308,26 @@ Kung ayaw mo yet ng AI feature — leave `GEMINI_API_KEY` empty. App works norma
 - May migration timing issue — walang user na na-promote to admin.
 - Fix: `docker compose exec app php artisan tinker --execute='App\Models\User::first()->update(["is_admin" => true]);'`
 
-**AI Assistant nagsasabing "AI service error"**
-- Check `.env` may laman `GEMINI_API_KEY`
-- Run: `docker compose exec app php artisan config:clear`
-- Kung 429 rate limit — mag-hintay 1 minute (free tier 15 req/min)
-- Kung 404 sa model — try `GEMINI_MODEL=gemini-3.5-flash-lite` sa `.env`, then clear config
+**AI Assistant may error sa chat window**
+
+Una, patakbuhin ang diagnostic — sasabihin niya mismo kung key ba o model ang sira:
+
+```bash
+docker compose exec app php artisan ai:check
+```
+
+Ipapakita nito kung tanggap ang API key, at ililista ang lahat ng models na pwede gamitin ng key na iyon.
+
+- **"The AI service rejected the API key"** — mali o expired ang `GEMINI_API_KEY`.
+  Dapat **Google AI Studio key** ito: nagsisimula sa `AIza`, 39 characters.
+  Kumuha ng bago sa https://aistudio.google.com/apikey → ilagay sa `.env` → `php artisan config:clear`.
+  (Ang mga key na galing sa ibang Google product — halimbawa yung nagsisimula sa `AQ.` —
+  ay tinatanggihan ng Gemini API na may HTTP 401.)
+- **"The AI model … is not available"** — palitan ang `GEMINI_MODEL` sa `.env` ng isa sa
+  nilista ng `ai:check`, then `php artisan config:clear`.
+- **429 rate limit** — maghintay ng 1 minuto (free tier: 15 requests/min).
+- Ang buong error galing sa Google ay nasa `storage/logs/laravel.log` — hindi ito ipinapakita
+  sa chat window dahil kasama doon ang API key.
 
 **Backup button walang response**
 - Verify `storage/app/backups/` directory exists and writable

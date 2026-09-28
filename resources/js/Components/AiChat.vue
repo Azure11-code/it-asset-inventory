@@ -9,12 +9,21 @@ const axios = window.axios;
 // Configure marked — GFM tables, line breaks respected
 marked.setOptions({ gfm: true, breaks: true });
 
+const escapeHtml = (s) => s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+// The rendered markdown goes into v-html, and marked does not strip HTML. The
+// answer text can quote database content (an asset note, an employee name),
+// so raw tags in it would run as markup. Escaping first means markdown still
+// renders and any HTML shows up as the literal text it was.
 const renderMarkdown = (text) => {
     if (!text) return '';
     try {
-        return marked.parse(String(text));
+        return marked.parse(escapeHtml(String(text)));
     } catch (e) {
-        return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        return escapeHtml(String(text));
     }
 };
 
