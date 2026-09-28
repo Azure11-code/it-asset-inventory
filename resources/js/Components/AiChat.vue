@@ -63,6 +63,9 @@ const open = ref(false);
 const input = ref('');
 const messages = ref(loadHistory()); // [{ role: 'user'|'model', text, tools_used? }]
 const loading = ref(false);
+// Set when the server says the session lapsed — the composer is replaced by a
+// reload prompt, because every further question would fail the same way.
+const sessionExpired = ref(false);
 const scrollAreaRef = ref(null);
 const inputRef = ref(null);
 
@@ -129,8 +132,24 @@ const send = async (overrideText = null) => {
                 text: `⏱️ Rate limit reached. Please wait ~${wait} seconds bago mag-tanong ulit.\n\n(Free tier: 15 requests/minute. Kung mabilis mo ginagamit, hintayin lang ~1 minute at gagana ulit.)`,
                 error: true,
             });
+        } else if (resp?.status === 419 || resp?.status === 401) {
+            // 419 = CSRF token no longer valid, 401 = signed out. Both mean the
+            // session lapsed while this tab sat open; only a reload fixes it.
+            sessionExpired.value = true;
+            messages.value.push({
+                role: 'model',
+                text: '🔒 Nag-expire ang session mo habang nakabukas ang page na ito. '
+                    + 'I-reload ang page para makapag-tanong ulit — hindi mawawala ang chat history.',
+                error: true,
+            });
+        } else if (!resp) {
+            messages.value.push({
+                role: 'model',
+                text: '⚠️ Hindi ma-abot ang server. Check your connection, then try again.',
+                error: true,
+            });
         } else {
-            const msg = resp?.data?.error || e.message || 'Network error';
+            const msg = resp.data?.error || `Unexpected error (HTTP ${resp.status}).`;
             messages.value.push({ role: 'model', text: `⚠️ ${msg}`, error: true });
         }
     } finally {
@@ -139,6 +158,9 @@ const send = async (overrideText = null) => {
         nextTick(() => inputRef.value?.focus());
     }
 };
+
+// Chat history lives in localStorage, so it survives the reload.
+const reloadPage = () => window.location.reload();
 
 const toolNames = (m) => (m.tools_used || []).map(t => t.name).join(', ');
 const hasMessages = computed(() => messages.value.length > 0);
@@ -249,7 +271,18 @@ const hasMessages = computed(() => messages.value.length > 0);
 
             <!-- Input -->
 
-            <form class="flex gap-1.5 border-t border-slate-100 bg-white p-2" @submit.prevent="send()">
+            <!-- Session lapsed: asking again cannot work until the page reloads. -->
+            <div v-if="sessionExpired" class="border-t border-slate-100 bg-amber-50 p-2">
+                <button
+                    type="button"
+                    class="w-full rounded-md bg-amber-600 px-3 py-2 text-[13px] font-semibold text-white transition hover:bg-amber-700"
+                    @click="reloadPage"
+                >
+                    Reload page to continue
+                </button>
+            </div>
+
+            <form v-else class="flex gap-1.5 border-t border-slate-100 bg-white p-2" @submit.prevent="send()">
                 <input
                     ref="inputRef"
                     v-model="input"
