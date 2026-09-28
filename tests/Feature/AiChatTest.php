@@ -137,6 +137,26 @@ class AiChatTest extends TestCase
         $response->assertJson(['ok' => false, 'rate_limit' => true, 'retry_after' => 14]);
     }
 
+    public function test_a_dropped_connection_is_retried_before_giving_up(): void
+    {
+        config(['services.gemini.api_key' => self::FAKE_KEY]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::sequence()
+            ->pushFailedConnection()
+            ->push(['candidates' => [['content' => ['parts' => [['text' => 'Recovered.']]]]]], 200)]);
+
+        $this->ask()->assertOk()->assertJson(['ok' => true, 'text' => 'Recovered.']);
+    }
+
+    public function test_a_connection_that_never_recovers_is_reported_plainly(): void
+    {
+        config(['services.gemini.api_key' => self::FAKE_KEY]);
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::failedConnection()]);
+
+        $error = $this->ask()->assertStatus(502)->json('error');
+
+        $this->assertStringContainsString('Could not reach the AI service', $error);
+    }
+
     public function test_it_validates_the_message(): void
     {
         $this->actingAs($this->user())

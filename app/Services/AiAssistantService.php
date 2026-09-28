@@ -141,7 +141,18 @@ class AiAssistantService
                     ->withHeaders(['x-goog-api-key' => $apiKey])
                     ->post($url, $body);
             } catch (\Illuminate\Http\Client\ConnectionException $e) {
-                Log::warning('Gemini API unreachable', ['error' => $e->getMessage()]);
+                // A dropped connection is usually a blip; retry it like a 5xx
+                // rather than failing a question the next attempt would answer.
+                Log::warning('Gemini API unreachable', [
+                    'attempt' => $attempt + 1,
+                    'error'   => $e->getMessage(),
+                ]);
+
+                if ($attempt < self::MAX_RETRIES) {
+                    $this->pause(2 * ($attempt + 1));
+                    continue;
+                }
+
                 throw new AiServiceException(
                     'Could not reach the AI service. Check the server\'s internet connection and try again.'
                 );
@@ -153,12 +164,7 @@ class AiAssistantService
 
             // 429 = rate limit, 5xx = overloaded/transient — worth retrying.
             if (($status === 429 || $status >= 500) && $attempt < self::MAX_RETRIES) {
-                // Capped: a browser request is being held open for the whole wait.
-                $cap   = (int) config('services.gemini.retry_sleep_cap', 8);
-                $delay = min($this->extractRetryDelay($resp->json()) ?? (2 * ($attempt + 1)), $cap);
-                if ($delay > 0) {
-                    sleep($delay);
-                }
+                $this->pause($this->extractRetryDelay($resp->json()) ?? (2 * ($attempt + 1)));
                 continue;
             }
 
@@ -180,6 +186,19 @@ class AiAssistantService
         throw new AiServiceException(
             'The AI service kept failing (HTTP ' . $lastStatus . '). Please try again in a moment.'
         );
+    }
+
+    /**
+     * Waits between retries, capped: a browser request is held open for the
+     * whole wait, so Google's suggested delay is not always worth honouring.
+     */
+    private function pause(int $seconds): void
+    {
+        $seconds = min($seconds, (int) config('services.gemini.retry_sleep_cap', 8));
+
+        if ($seconds > 0) {
+            sleep($seconds);
+        }
     }
 
     /**
