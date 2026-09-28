@@ -192,8 +192,9 @@ class AiAssistantService
 
         return match (true) {
             $status === 401 || $reason === 'UNAUTHENTICATED' =>
-                'The AI service rejected the API key. An administrator has to check GEMINI_API_KEY in .env — '
-                . 'it must be a Google AI Studio key (it starts with "AIza"), created at https://aistudio.google.com/apikey. '
+                'The AI service rejected the API key — it is expired, revoked or mistyped. '
+                . 'An administrator has to replace GEMINI_API_KEY in .env with a key from '
+                . 'https://aistudio.google.com/apikey, then run `php artisan config:clear`. '
                 . 'Run `php artisan ai:check` on the server to test it.',
 
             $status === 403 =>

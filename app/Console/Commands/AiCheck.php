@@ -41,16 +41,9 @@ class AiCheck extends Command
         $this->line('  Model   : ' . $model);
         $this->newLine();
 
-        // Google AI Studio keys look like "AIzaSy..." and are 39 characters.
-        // Anything else is almost always an OAuth token or a key for a different
-        // Google product, which this API rejects with a confusing 401.
-        if (! str_starts_with($key, 'AIza')) {
-            $this->warn('  ⚠ This does not look like a Google AI Studio API key.');
-            $this->line('    AI Studio keys start with "AIza" and are 39 characters long.');
-            $this->line('    Create one at https://aistudio.google.com/apikey');
-            $this->newLine();
-        }
-
+        // Google issues keys in more than one format ("AIza…" and "AQ.…" are both
+        // valid), so the shape of the key says nothing useful. Only the API can
+        // tell us whether it works — ask it.
         $this->line('  Contacting the API…');
 
         try {
