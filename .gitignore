@@ -17,3 +17,7 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Per-machine HTTPS cert — generate with scripts/generate-cert.sh, never commit
+/docker/nginx/certs/*.crt
+/docker/nginx/certs/*.key

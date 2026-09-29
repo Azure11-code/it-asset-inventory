@@ -81,16 +81,24 @@ docker compose ps
 echo.
 
 :: ---- 5. Show URLs ---------------------------------------------------------
+:: The LAN host comes from APP_URL, so these are the addresses other PCs and
+:: phones can actually open - not localhost, which only works on this machine.
 for /f "tokens=2 delims==" %%u in ('findstr /b /c:"APP_URL=" .env') do set "APP_URL=%%u"
+set "LAN_HOST="
+for /f "tokens=2 delims=/" %%h in ("%APP_URL%") do set "HOSTPORT=%%h"
+for /f "tokens=1 delims=:" %%h in ("%HOSTPORT%") do set "LAN_HOST=%%h"
+if not defined LAN_HOST set "LAN_HOST=localhost"
+
 echo ============================================
-echo   App URL   : %APP_URL%
-echo   Local     : http://localhost:8081
-echo   HTTPS/scan: https://localhost:8443
-echo   Vite HMR  : http://localhost:5174
-echo   MySQL     : localhost:3308
+echo   App (LAN)  : http://%LAN_HOST%:8081
+echo   HTTPS/scan : https://%LAN_HOST%:8443
+echo   Vite HMR   : http://%LAN_HOST%:5174
+echo   MySQL      : %LAN_HOST%:3308
 echo.
-echo   Stop with : docker compose down
-echo   Logs with : docker compose logs -f
+echo   On this PC : http://localhost:8081
+echo.
+echo   Stop with  : docker compose down
+echo   Logs with  : docker compose logs -f
 echo ============================================
 echo.
 pause
