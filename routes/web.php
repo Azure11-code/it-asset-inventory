@@ -68,13 +68,15 @@ Route::middleware('auth')->group(function () {
             ];
         }
 
+        // Ids ride along with every tally so the dashboard can link each figure
+        // to the matching filtered asset list.
         $byCategory = Asset::query()
             ->join('categories', 'assets.category_id', '=', 'categories.id')
-            ->select('categories.name', DB::raw('COUNT(*) as count'))
-            ->groupBy('categories.name')
+            ->select('categories.id', 'categories.name', DB::raw('COUNT(*) as count'))
+            ->groupBy('categories.id', 'categories.name')
             ->orderByDesc('count')
             ->get()
-            ->map(fn ($r) => ['name' => $r->name, 'count' => (int) $r->count])
+            ->map(fn ($r) => ['id' => (int) $r->id, 'name' => $r->name, 'count' => (int) $r->count])
             ->values();
 
         $byStatus = Asset::query()
@@ -89,7 +91,8 @@ Route::middleware('auth')->group(function () {
         $warrantyExpired      = Asset::whereDate('warranty_until', '<', $now)->count();
 
         // ── Maintained Asset: everything except retired/replaced ──
-        $maintainedCount = Asset::whereNotIn('current_status', ['retired', 'replaced'])->count();
+        // Same list the assets filter uses, so the tile and its link agree.
+        $maintainedCount = Asset::whereNotIn('current_status', \App\Http\Controllers\AssetController::RETIRED_STATUSES)->count();
 
         // ── Endpoint protection status from JSON specifications (No / Yes / Excluded) ──
         // Any named AV product counts as installed. Kept generic — not tied to one vendor.
@@ -111,11 +114,15 @@ Route::middleware('auth')->group(function () {
         // ── Count per department (Category × Department matrix) ──
         $byDept = Asset::query()
             ->leftJoin('departments', 'assets.department_id', '=', 'departments.id')
-            ->select('departments.name as dept', DB::raw('COUNT(*) as count'))
-            ->groupBy('departments.name')
+            ->select('departments.id as dept_id', 'departments.name as dept', DB::raw('COUNT(*) as count'))
+            ->groupBy('departments.id', 'departments.name')
             ->orderByDesc('count')
             ->get()
-            ->map(fn ($r) => ['name' => $r->dept ?? '(no department)', 'count' => (int) $r->count])
+            ->map(fn ($r) => [
+                'id'    => $r->dept_id ? (int) $r->dept_id : null,
+                'name'  => $r->dept ?? '(no department)',
+                'count' => (int) $r->count,
+            ])
             ->values();
 
         // ── Category × Department pivot ──
@@ -125,12 +132,22 @@ Route::middleware('auth')->group(function () {
             ->select('categories.name as category', 'departments.name as department', DB::raw('COUNT(*) as count'))
             ->groupBy('categories.name', 'departments.name')
             ->get();
-        $categoryList   = Category::orderBy('name')->pluck('name')->all();
-        $departmentList = Department::orderBy('name')->pluck('name')->all();
-        $catDeptMatrix  = [];
-        foreach ($categoryList as $cat) {
-            $row = ['category' => $cat, 'total' => 0, 'cells' => array_fill_keys($departmentList, 0)];
-            foreach ($catDeptRows->where('category', $cat) as $cell) {
+        // Columns and rows carry their ids so each pivot cell can link to the
+        // assets behind it; the cells themselves stay keyed by name.
+        $categories     = Category::orderBy('name')->get(['id', 'name']);
+        $departments    = Department::orderBy('name')->get(['id', 'name']);
+        $categoryList   = $categories->pluck('name')->all();
+        $departmentList = $departments->pluck('name')->all();
+
+        $catDeptMatrix = [];
+        foreach ($categories as $cat) {
+            $row = [
+                'category'    => $cat->name,
+                'category_id' => $cat->id,
+                'total'       => 0,
+                'cells'       => array_fill_keys($departmentList, 0),
+            ];
+            foreach ($catDeptRows->where('category', $cat->name) as $cell) {
                 if ($cell->department && in_array($cell->department, $departmentList, true)) {
                     $row['cells'][$cell->department] = (int) $cell->count;
                     $row['total'] += (int) $cell->count;
@@ -146,11 +163,16 @@ Route::middleware('auth')->group(function () {
             ->select('locations.name as location', 'categories.name as category', DB::raw('COUNT(*) as count'))
             ->groupBy('locations.name', 'categories.name')
             ->get();
-        $locationList  = Location::orderBy('name')->pluck('name')->all();
-        $locCatMatrix  = [];
-        foreach ($locationList as $loc) {
-            $row = ['location' => $loc, 'total' => 0, 'cells' => array_fill_keys($categoryList, 0)];
-            foreach ($locCatRows->where('location', $loc) as $cell) {
+        $locations    = Location::orderBy('name')->get(['id', 'name']);
+        $locCatMatrix = [];
+        foreach ($locations as $loc) {
+            $row = [
+                'location'    => $loc->name,
+                'location_id' => $loc->id,
+                'total'       => 0,
+                'cells'       => array_fill_keys($categoryList, 0),
+            ];
+            foreach ($locCatRows->where('location', $loc->name) as $cell) {
                 if ($cell->category && in_array($cell->category, $categoryList, true)) {
                     $row['cells'][$cell->category] = (int) $cell->count;
                     $row['total'] += (int) $cell->count;
@@ -190,8 +212,8 @@ Route::middleware('auth')->group(function () {
                 'movements'    => $days,
                 'by_category'  => $byCategory,
                 'by_department'=> $byDept,
-                'cat_dept'     => ['departments' => $departmentList, 'rows' => $catDeptMatrix],
-                'loc_cat'      => ['categories'  => $categoryList,   'rows' => $locCatMatrix],
+                'cat_dept'     => ['departments' => $departments, 'rows' => $catDeptMatrix],
+                'loc_cat'      => ['categories'  => $categories,  'rows' => $locCatMatrix],
                 'by_status'   => [
                     'in_stock'   => (int) ($byStatus['in_stock'] ?? 0),
                     'assigned'   => (int) ($byStatus['assigned'] ?? 0),

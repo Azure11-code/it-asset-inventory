@@ -40,6 +40,39 @@ class AssetController extends Controller implements HasMiddleware
         'warranty_until' => 'assets.warranty_until',
     ];
 
+    /** Query-string keys the asset list filters on — also what the dashboard links with. */
+    public const FILTER_KEYS = [
+        'search', 'status', 'category_id', 'brand_id',
+        'department_id', 'location_id', 'antivirus', 'warranty', 'maintained',
+    ];
+
+    /** Still in service — the dashboard's "Maintained Asset" figure. */
+    public const RETIRED_STATUSES = ['retired', 'replaced'];
+
+    /**
+     * The one place the asset list is narrowed down.
+     *
+     * Shared by the table, the Excel export and every dashboard link, so a
+     * figure on the dashboard and the rows you land on always agree.
+     */
+    private function applyFilters($query, Request $request)
+    {
+        return $query
+            ->when($request->search, fn ($q, $s) => $q->search($s))
+            ->when($request->status, fn ($q, $s) => $q->where('assets.current_status', $s))
+            ->when($request->category_id, fn ($q, $id) => $q->where('assets.category_id', $id))
+            ->when($request->brand_id, fn ($q, $id) => $q->where('assets.brand_id', $id))
+            ->when($request->department_id, fn ($q, $id) => $q->where('assets.department_id', $id))
+            ->when($request->location_id, fn ($q, $id) => $q->where('assets.current_location_id', $id))
+            ->when($request->antivirus, fn ($q, $bucket) => $q->antivirus($bucket))
+            ->when($request->boolean('maintained'), fn ($q) => $q->whereNotIn('assets.current_status', self::RETIRED_STATUSES))
+            ->when($request->warranty, function ($q, $w) {
+                if ($w === 'active')        $q->whereDate('assets.warranty_until', '>', now()->addDays(90));
+                if ($w === 'expiring_soon') $q->whereBetween('assets.warranty_until', [now(), now()->addDays(90)]);
+                if ($w === 'expired')       $q->whereDate('assets.warranty_until', '<', now());
+            });
+    }
+
     public function index(Request $request)
     {
         $sortKey   = array_key_exists($request->sort, self::SORT_MAP) ? $request->sort : null;
@@ -52,17 +85,9 @@ class AssetController extends Controller implements HasMiddleware
                 'category:id,name,prefix',
                 'currentHolder:id,first_name,middle_name,last_name',
                 'currentLocation:id,name',
-            ])
-            ->when($request->search, fn ($q, $s) => $q->search($s))
+            ]);
 
-            ->when($request->status, fn ($q, $s) => $q->where('current_status', $s))
-            ->when($request->category_id, fn ($q, $id) => $q->where('category_id', $id))
-            ->when($request->brand_id, fn ($q, $id) => $q->where('brand_id', $id))
-            ->when($request->warranty, function ($q, $w) {
-                if ($w === 'active')        $q->whereDate('warranty_until', '>', now()->addDays(90));
-                if ($w === 'expiring_soon') $q->whereBetween('warranty_until', [now(), now()->addDays(90)]);
-                if ($w === 'expired')       $q->whereDate('warranty_until', '<', now());
-            });
+        $this->applyFilters($query, $request);
 
         if ($sortKey === 'category') {
             $query->leftJoin('categories', 'assets.category_id', '=', 'categories.id');
@@ -103,10 +128,12 @@ class AssetController extends Controller implements HasMiddleware
         return Inertia::render('Assets/Index', [
             'assets'  => $assets,
             'lookups' => [
-                'categories' => Category::select('id', 'name')->orderBy('name')->get(),
-                'brands'     => Brand::select('id', 'name')->orderBy('name')->get(),
+                'categories'  => Category::select('id', 'name')->orderBy('name')->get(),
+                'brands'      => Brand::select('id', 'name')->orderBy('name')->get(),
+                'departments' => \App\Models\Department::select('id', 'name')->orderBy('name')->get(),
+                'locations'   => Location::select('id', 'name')->orderBy('name')->get(),
             ],
-            'filters' => $request->only('search', 'status', 'category_id', 'brand_id', 'warranty', 'sort', 'direction'),
+            'filters' => $request->only([...self::FILTER_KEYS, 'sort', 'direction']),
         ]);
     }
 
@@ -147,18 +174,9 @@ class AssetController extends Controller implements HasMiddleware
         $sortKey   = array_key_exists($request->sort, self::SORT_MAP) ? $request->sort : null;
         $direction = $request->direction === 'desc' ? 'desc' : 'asc';
 
-        $query = Asset::query()
-            ->select('assets.*')
-            ->when($request->search, fn ($q, $s) => $q->search($s))
+        $query = Asset::query()->select('assets.*');
 
-            ->when($request->status, fn ($q, $s) => $q->where('current_status', $s))
-            ->when($request->category_id, fn ($q, $id) => $q->where('category_id', $id))
-            ->when($request->brand_id, fn ($q, $id) => $q->where('brand_id', $id))
-            ->when($request->warranty, function ($q, $w) {
-                if ($w === 'active')        $q->whereDate('warranty_until', '>', now()->addDays(90));
-                if ($w === 'expiring_soon') $q->whereBetween('warranty_until', [now(), now()->addDays(90)]);
-                if ($w === 'expired')       $q->whereDate('warranty_until', '<', now());
-            });
+        $this->applyFilters($query, $request);
 
         if ($sortKey === 'category') {
             $query->leftJoin('categories', 'assets.category_id', '=', 'categories.id');

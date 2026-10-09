@@ -27,6 +27,13 @@ const WARRANTY_OPTIONS = [
     { value: 'expiring_soon',  label: 'Expiring ≤ 90d' },
     { value: 'expired',        label: 'Expired' },
 ];
+// Mirrors App\Models\Asset::ANTIVIRUS_BUCKETS.
+const ANTIVIRUS_OPTIONS = [
+    { value: 'Yes',      label: 'Protected' },
+    { value: 'No',       label: 'No AV' },
+    { value: 'Excluded', label: 'Excluded' },
+    { value: '—',        label: 'Not set' },
+];
 
 const props = defineProps({ assets: Object, lookups: Object, filters: Object });
 
@@ -34,7 +41,23 @@ const search = ref(props.filters?.search ?? '');
 const status = ref(props.filters?.status ?? '');
 const category = ref(props.filters?.category_id ?? '');
 const brand = ref(props.filters?.brand_id ?? '');
+const department = ref(props.filters?.department_id ?? '');
+const location = ref(props.filters?.location_id ?? '');
+const antivirus = ref(props.filters?.antivirus ?? '');
 const warranty = ref(props.filters?.warranty ?? '');
+
+// One definition of the active filters, used for the request, the "clear"
+// check, sort links and the export URL — so they can never disagree.
+const activeFilters = computed(() => ({
+    search: search.value || undefined,
+    status: status.value || undefined,
+    category_id: category.value || undefined,
+    brand_id: brand.value || undefined,
+    department_id: department.value || undefined,
+    location_id: location.value || undefined,
+    antivirus: antivirus.value || undefined,
+    warranty: warranty.value || undefined,
+}));
 
 const searchInput = ref(null);
 let timer = null;
@@ -44,13 +67,7 @@ const refresh = () => {
         const el = searchInput.value;
         const wasFocused = el && document.activeElement === el;
         const caret = wasFocused ? el.selectionStart : null;
-        router.get('/assets', {
-            search: search.value || undefined,
-            status: status.value || undefined,
-            category_id: category.value || undefined,
-            brand_id: brand.value || undefined,
-            warranty: warranty.value || undefined,
-        }, {
+        router.get('/assets', activeFilters.value, {
             preserveState: true,
             preserveScroll: true,
             replace: true,
@@ -70,9 +87,20 @@ const refresh = () => {
         });
     }, 1000);
 };
-watch([search, status, category, brand, warranty], refresh);
+watch([search, status, category, brand, department, location, antivirus, warranty], refresh);
 
-const hasFilters = computed(() => search.value || status.value || category.value || brand.value || warranty.value);
+const hasFilters = computed(() => Object.values(activeFilters.value).some(Boolean));
+
+const clearFilters = () => {
+    search.value = '';
+    status.value = '';
+    category.value = '';
+    brand.value = '';
+    department.value = '';
+    location.value = '';
+    antivirus.value = '';
+    warranty.value = '';
+};
 
 const statusTone = {
     in_stock:   'sky',
@@ -90,13 +118,7 @@ const warrantyTone = {
     unknown: 'slate',
 };
 
-const sortExtras = computed(() => ({
-    search: search.value || undefined,
-    status: status.value || undefined,
-    category_id: category.value || undefined,
-    brand_id: brand.value || undefined,
-    warranty: warranty.value || undefined,
-}));
+const sortExtras = computed(() => activeFilters.value);
 
 // ── Import modal ──
 const showImport = ref(false);
@@ -113,11 +135,9 @@ const submitImport = () => {
 
 const exportUrl = computed(() => {
     const qs = new URLSearchParams();
-    if (search.value)   qs.set('search', search.value);
-    if (status.value)   qs.set('status', status.value);
-    if (category.value) qs.set('category_id', category.value);
-    if (brand.value)    qs.set('brand_id', brand.value);
-    if (warranty.value) qs.set('warranty', warranty.value);
+    for (const [key, value] of Object.entries(activeFilters.value)) {
+        if (value) qs.set(key, value);
+    }
     if (props.filters?.sort)      qs.set('sort', props.filters.sort);
     if (props.filters?.direction) qs.set('direction', props.filters.direction);
     const q = qs.toString();
@@ -147,15 +167,30 @@ const exportUrl = computed(() => {
         </template>
 
         <div class="card">
-            <div class="grid gap-2 border-b border-slate-100 p-3 sm:grid-cols-[minmax(220px,1fr)_repeat(4,minmax(0,10rem))] sm:items-center">
-                <div class="relative">
-                    <MagnifyingGlassIcon class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input ref="searchInput" v-model="search" type="search" placeholder="Search tag, serial, model, holder name..." class="input pl-9" />
+            <div class="border-b border-slate-100 p-3">
+                <div class="grid gap-2 sm:grid-cols-[minmax(220px,1fr)_repeat(3,minmax(0,10rem))] sm:items-center">
+                    <div class="relative">
+                        <MagnifyingGlassIcon class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <input ref="searchInput" v-model="search" type="search" placeholder="Search tag, serial, model, holder name..." class="input pl-9" />
+                    </div>
+                    <Combobox v-model="status"   :options="STATUS_OPTIONS"     value-key="value" label-key="label" placeholder="All Status"     null-label="All Status" />
+                    <Combobox v-model="category" :options="lookups.categories"                                     placeholder="All Categories" null-label="All Categories" />
+                    <Combobox v-model="brand"    :options="lookups.brands"                                         placeholder="All Brands"     null-label="All Brands" />
                 </div>
-                <Combobox v-model="status"   :options="STATUS_OPTIONS"    value-key="value" label-key="label" placeholder="All Status"    null-label="All Status" />
-                <Combobox v-model="category" :options="lookups.categories"                                    placeholder="All Categories" null-label="All Categories" />
-                <Combobox v-model="brand"    :options="lookups.brands"                                        placeholder="All Brands"    null-label="All Brands" />
-                <Combobox v-model="warranty" :options="WARRANTY_OPTIONS"  value-key="value" label-key="label" placeholder="Any Warranty"  null-label="Any Warranty" />
+                <div class="mt-2 grid gap-2 sm:grid-cols-[repeat(4,minmax(0,10rem))_1fr] sm:items-center">
+                    <Combobox v-model="department" :options="lookups.departments"                                    placeholder="All Departments" null-label="All Departments" />
+                    <Combobox v-model="location"   :options="lookups.locations"                                      placeholder="All Locations"   null-label="All Locations" />
+                    <Combobox v-model="antivirus"  :options="ANTIVIRUS_OPTIONS" value-key="value" label-key="label" placeholder="Any Antivirus"   null-label="Any Antivirus" />
+                    <Combobox v-model="warranty"   :options="WARRANTY_OPTIONS"  value-key="value" label-key="label" placeholder="Any Warranty"    null-label="Any Warranty" />
+                    <button
+                        v-if="hasFilters"
+                        type="button"
+                        class="justify-self-start text-xs font-semibold text-brand-600 hover:text-brand-700 sm:justify-self-end"
+                        @click="clearFilters"
+                    >
+                        Clear filters
+                    </button>
+                </div>
             </div>
 
             <EmptyState

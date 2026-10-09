@@ -69,6 +69,46 @@
         @apply mt-0.5 text-[11px] text-slate-500;
     }
 
+    /* ------- Drill-down: dashboard figures that open the rows behind them ------- */
+    /* A whole card that is a link. */
+    .drill {
+        @apply block transition hover:border-brand-300 hover:shadow-md
+               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400;
+    }
+    /* A row inside a card. */
+    .drill-row {
+        @apply transition hover:bg-brand-50/70
+               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-400;
+    }
+    /* A header or label that points somewhere. */
+    .drill-link {
+        @apply rounded transition hover:text-brand-700 hover:underline
+               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400;
+    }
+    /* A pivot cell — fills the td so the whole box is the hit area. */
+    .drill-cell {
+        @apply flex h-full w-full items-center justify-center px-2 py-1.5 transition
+               hover:bg-brand-100 hover:text-brand-900
+               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-400;
+    }
+
+    /* Printed output is paper: underlines and hover affordances only add noise. */
+    @media print {
+        .drill, .drill-row, .drill-link, .drill-cell {
+            @apply no-underline shadow-none;
+        }
+    }
+}
+
+/* Bars and slices that open the assets behind them. Outside @layer components
+   because these target ApexCharts' own SVG classes, which Tailwind does not own. */
+.chart-drill .apexcharts-bar-area,
+.chart-drill .apexcharts-pie-area {
+    cursor: pointer;
+}
+
+@layer components {
+
     /* ---------------- Forms ---------------- */
     .input {
         @apply block w-full rounded-md border-0 bg-white py-1.5 px-2.5 text-[13px] text-slate-900 shadow-sm

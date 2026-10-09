@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\Searchable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -65,6 +66,62 @@ class Asset extends Model
     public function replaces(): BelongsTo         { return $this->belongsTo(Asset::class, 'replaces_asset_id'); }
     public function movements(): HasMany          { return $this->hasMany(AssetMovement::class)->orderByDesc('movement_date')->orderByDesc('id'); }
     public function partChanges(): HasMany        { return $this->hasMany(AssetPartChange::class)->orderByDesc('changed_at')->orderByDesc('id'); }
+
+    /** The endpoint-protection buckets the dashboard reports on. */
+    public const ANTIVIRUS_BUCKETS = ['Yes', 'No', 'Excluded', '—'];
+
+    /**
+     * Which endpoint-protection bucket an asset falls in, read from its
+     * "Antivirus" specification. Any named product counts as installed, so
+     * this is not tied to one vendor.
+     *
+     * The dashboard tally and the assets-list filter both call this, so a
+     * number on the dashboard always matches the list it links to.
+     */
+    public static function antivirusBucket(?array $specifications): string
+    {
+        $value = collect($specifications ?? [])
+            ->first(fn ($s) => is_array($s) && strcasecmp($s['key'] ?? '', 'Antivirus') === 0);
+
+        $raw = is_array($value) ? trim((string) ($value['value'] ?? '')) : '';
+        if ($raw === '') {
+            return '—';
+        }
+
+        return match (strtolower($raw)) {
+            'yes', 'y'                 => 'Yes',
+            'excluded'                 => 'Excluded',
+            'no', 'n', 'none', '-'     => 'No',
+            default                    => 'Yes',
+        };
+    }
+
+    /**
+     * Narrows to the assets in one endpoint-protection bucket.
+     *
+     * The value lives inside a JSON array of {key, value} pairs under a key
+     * whose spelling varies by case, so it is classified in PHP and matched
+     * by id rather than contorted into SQL.
+     */
+    public function scopeAntivirus(Builder $query, ?string $bucket): Builder
+    {
+        if (! in_array($bucket, self::ANTIVIRUS_BUCKETS, true)) {
+            return $query;
+        }
+
+        $ids = [];
+        static::query()
+            ->select('id', 'specifications')
+            ->chunk(500, function ($chunk) use (&$ids, $bucket) {
+                foreach ($chunk as $asset) {
+                    if (self::antivirusBucket($asset->specifications) === $bucket) {
+                        $ids[] = $asset->id;
+                    }
+                }
+            });
+
+        return $query->whereIn('assets.id', $ids);
+    }
 
     public static function formatYearsMonths(?Carbon $start, ?Carbon $end = null): ?string
     {
