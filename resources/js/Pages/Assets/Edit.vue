@@ -24,6 +24,7 @@ const form = useForm({
     current_status: props.asset.current_status,
     current_holder_id: props.asset.current_holder_id ?? '',
     current_location_id: props.asset.current_location_id ?? '',
+    department_id: props.asset.department_id ?? null,
     notes: props.asset.notes ?? '',
 });
 

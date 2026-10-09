@@ -67,6 +67,60 @@ class Asset extends Model
     public function movements(): HasMany          { return $this->hasMany(AssetMovement::class)->orderByDesc('movement_date')->orderByDesc('id'); }
     public function partChanges(): HasMany        { return $this->hasMany(AssetPartChange::class)->orderByDesc('changed_at')->orderByDesc('id'); }
 
+    /**
+     * The department rule runs on every save, so each of the paths that can
+     * move an asset — the form, bulk receive, the importer, and each kind of
+     * movement — obeys it without having to remember to.
+     */
+    protected static function booted(): void
+    {
+        static::saving(fn (Asset $asset) => $asset->applyDepartmentRule());
+    }
+
+    /**
+     * Whether this asset sits at a location that is organised into departments.
+     *
+     * Only such assets carry a department; everywhere else the column stays
+     * null and the asset is reported under its location instead.
+     */
+    public function locationHasDepartments(): bool
+    {
+        if ($this->current_location_id === null) {
+            return false;
+        }
+
+        // Read by id rather than through the relation: during a save the
+        // relation may still hold the location the asset is moving away from.
+        return (bool) Location::whereKey($this->current_location_id)->value('has_departments');
+    }
+
+    /**
+     * Applies the department rule to an asset about to be saved.
+     *
+     * - At a location without departments the department is cleared: it would
+     *   describe nothing.
+     * - At a location with departments a blank department is filled in from
+     *   the holder, which is the only place the answer can come from.
+     *
+     * A department that is already set is never overwritten. That is what
+     * keeps it steady when the holder resigns, goes inactive, or hands the
+     * asset back — the asset still belongs to the department it was bought
+     * for. Changing it takes an explicit edit, or a move to a location
+     * without departments.
+     */
+    public function applyDepartmentRule(): void
+    {
+        if (! $this->locationHasDepartments()) {
+            $this->department_id = null;
+
+            return;
+        }
+
+        if ($this->department_id === null && $this->current_holder_id !== null) {
+            $this->department_id = Employee::whereKey($this->current_holder_id)->value('department_id');
+        }
+    }
+
     /** The endpoint-protection buckets the dashboard reports on. */
     public const ANTIVIRUS_BUCKETS = ['Yes', 'No', 'Excluded', '—'];
 

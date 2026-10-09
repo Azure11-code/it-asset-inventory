@@ -82,6 +82,38 @@ watch(
     }
 );
 
+// ── Department: only for locations that are split into departments ──
+// Head Office has departments; warehouses and sites do not, and their assets
+// are reported under the location name instead.
+const locationHasDepartments = computed(() => {
+    const id = props.form.current_location_id;
+    if (!id) return false;
+    return !!(props.lookups.locations || []).find(l => String(l.id) === String(id))?.has_departments;
+});
+
+const holderDepartmentId = computed(() => {
+    const id = props.form.current_holder_id;
+    if (!id) return null;
+    return (props.lookups.employees || []).find(e => String(e.id) === String(id))?.department_id ?? null;
+});
+
+watch(
+    [locationHasDepartments, holderDepartmentId],
+    ([hasDepartments, holderDept]) => {
+        if (!hasDepartments) {
+            // Saved as empty anywhere without departments — mirror what the
+            // server does so the form never shows a value it will not keep.
+            props.form.department_id = null;
+            return;
+        }
+        // Pre-fill from the holder, but never overwrite a department someone set.
+        if (!props.form.department_id && holderDept) {
+            props.form.department_id = holderDept;
+        }
+    },
+    { immediate: true },
+);
+
 // ── Auto-tag from Asset Code Rule ──
 const selectedRuleId = ref(null);
 const rulePreview    = ref('');
@@ -235,6 +267,15 @@ watch(selectedRuleId, (id) => applyRule(id));
                 </FormField>
                 <FormField label="Current Location" :error="form.errors.current_location_id">
                     <Combobox v-model="form.current_location_id" :options="lookups.locations" placeholder="Search location…" />
+                </FormField>
+                <FormField
+                    v-if="locationHasDepartments"
+                    label="Department"
+                    :error="form.errors.department_id"
+                    required
+                >
+                    <Combobox v-model="form.department_id" :options="lookups.departments" placeholder="Search department…" />
+                    <p class="mt-1 text-xs text-slate-500">This location is organised into departments.</p>
                 </FormField>
                 <FormField label="Notes" :error="form.errors.notes" class="sm:col-span-2 lg:col-span-3">
                     <textarea v-model="form.notes" rows="2" class="input"></textarea>

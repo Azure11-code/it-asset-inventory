@@ -32,7 +32,9 @@ class SearchTest extends TestCase
         $brand      = Brand::create(['name' => 'Dellzzz', 'slug' => 'dellzzz-test']);
         $category   = Category::create(['name' => 'Laptopzzz', 'slug' => 'laptopzzz-test', 'prefix' => 'LTZ']);
         $department = Department::create(['code' => 'ITZZZ', 'name' => 'Infotechzzz']);
-        $location   = Location::create(['name' => 'Warehouzzz', 'building' => 'Annexzzz']);
+        // Flagged as having departments so the asset keeps the department this
+        // test searches it by — assets elsewhere have none, by design.
+        $location   = Location::create(['name' => 'Warehouzzz', 'building' => 'Annexzzz', 'has_departments' => true]);
 
         $employee = Employee::create([
             'employee_no'   => 'EMPZZZ-1',

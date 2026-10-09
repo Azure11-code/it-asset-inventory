@@ -36,12 +36,14 @@ const form = useForm({
     name: '',
     description: '',
     is_active: true,
+    has_departments: false,
 });
 
 const openCreate = () => {
     editing.value = null;
     form.reset();
     form.is_active = true;
+    form.has_departments = false;
     showModal.value = true;
 };
 
@@ -50,6 +52,7 @@ const openEdit = (row) => {
     form.name = row.name;
     form.description = row.description ?? '';
     form.is_active = !!row.is_active;
+    form.has_departments = !!row.has_departments;
     showModal.value = true;
 };
 
@@ -166,6 +169,19 @@ const doDelete = () => {
                         <label class="inline-flex items-center gap-2 text-sm text-slate-700">
                             <input v-model="form.is_active" type="checkbox" class="checkbox" />
                             Active
+                        </label>
+                    </FormField>
+                    <FormField :error="form.errors.has_departments">
+                        <label class="inline-flex items-start gap-2 text-sm text-slate-700">
+                            <input v-model="form.has_departments" type="checkbox" class="checkbox mt-0.5" />
+                            <span>
+                                Organised into departments
+                                <span class="mt-0.5 block text-xs text-slate-500">
+                                    Assets here must be assigned to a department. Turn this on for the
+                                    head office; leave it off for warehouses and sites, where assets are
+                                    reported under the location itself.
+                                </span>
+                            </span>
                         </label>
                     </FormField>
                 </div>

@@ -112,18 +112,59 @@ Route::middleware('auth')->group(function () {
         });
 
         // ── Count per department (Category × Department matrix) ──
-        $byDept = Asset::query()
-            ->leftJoin('departments', 'assets.department_id', '=', 'departments.id')
-            ->select('departments.id as dept_id', 'departments.name as dept', DB::raw('COUNT(*) as count'))
+        // ── Assets per Department ──
+        // Locations that are split into departments (the head office) report
+        // one bar per department; every other location reports a single bar
+        // under its own name. Each bar links to the list it counts.
+        $byDeptRows = Asset::query()
+            ->join('locations', 'assets.current_location_id', '=', 'locations.id')
+            ->where('locations.has_departments', true)
+            ->join('departments', 'assets.department_id', '=', 'departments.id')
+            ->select('departments.id', 'departments.name', DB::raw('COUNT(*) as count'))
             ->groupBy('departments.id', 'departments.name')
-            ->orderByDesc('count')
             ->get()
             ->map(fn ($r) => [
-                'id'    => $r->dept_id ? (int) $r->dept_id : null,
-                'name'  => $r->dept ?? '(no department)',
-                'count' => (int) $r->count,
-            ])
-            ->values();
+                'name'   => $r->name,
+                'count'  => (int) $r->count,
+                'filter' => ['department_id' => (int) $r->id],
+            ]);
+
+        $byLocationRows = Asset::query()
+            ->join('locations', 'assets.current_location_id', '=', 'locations.id')
+            ->where('locations.has_departments', false)
+            ->select('locations.id', 'locations.name', DB::raw('COUNT(*) as count'))
+            ->groupBy('locations.id', 'locations.name')
+            ->get()
+            ->map(fn ($r) => [
+                'name'   => $r->name,
+                'count'  => (int) $r->count,
+                'filter' => ['location_id' => (int) $r->id],
+            ]);
+
+        // Safety net: an asset with no location, or sitting at the head office
+        // with no department, belongs to neither group above. Normally there
+        // are none, and then no bar is drawn — but they must never go missing
+        // from the chart, or the bars would quietly stop adding up.
+        $unplacedCount = Asset::query()
+            ->leftJoin('locations', 'assets.current_location_id', '=', 'locations.id')
+            ->where(function ($q) {
+                $q->whereNull('assets.current_location_id')
+                  ->orWhere(fn ($w) => $w->where('locations.has_departments', true)
+                                         ->whereNull('assets.department_id'));
+            })
+            ->count();
+
+        $byDept = $byDeptRows->concat($byLocationRows);
+
+        if ($unplacedCount > 0) {
+            $byDept = $byDept->push([
+                'name'   => 'Unassigned',
+                'count'  => $unplacedCount,
+                'filter' => ['placement' => 'unassigned'],
+            ]);
+        }
+
+        $byDept = $byDept->sortByDesc('count')->values();
 
         // ── Category × Department pivot ──
         $catDeptRows = Asset::query()

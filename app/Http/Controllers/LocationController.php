@@ -47,6 +47,7 @@ class LocationController extends Controller implements HasMiddleware
             'name'        => ['required', 'string', 'max:255', 'unique:locations,name'],
             'description' => ['nullable', 'string'],
             'is_active'   => ['boolean'],
+            'has_departments' => ['boolean'],
         ]);
 
         Location::create($data);
@@ -60,6 +61,7 @@ class LocationController extends Controller implements HasMiddleware
             'name'        => ['required', 'string', 'max:255', Rule::unique('locations', 'name')->ignore($location->id)],
             'description' => ['nullable', 'string'],
             'is_active'   => ['boolean'],
+            'has_departments' => ['boolean'],
         ]);
 
         $location->update($data);

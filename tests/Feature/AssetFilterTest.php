@@ -37,8 +37,9 @@ class AssetFilterTest extends TestCase
         $this->printers = Category::create(['name' => 'Printerzzz', 'slug' => 'printerzzz-f', 'prefix' => 'PRF']);
         $this->it       = Department::create(['code' => 'ITZF',  'name' => 'Infotechzzz F']);
         $this->sales    = Department::create(['code' => 'SLZF',  'name' => 'Saleszzz F']);
-        $this->hq       = Location::create(['name' => 'HQzzz F']);
-        $this->annex    = Location::create(['name' => 'Annexzzz F']);
+        // Both are offices split into departments, so their assets keep one.
+        $this->hq       = Location::create(['name' => 'HQzzz F',    'has_departments' => true]);
+        $this->annex    = Location::create(['name' => 'Annexzzz F', 'has_departments' => true]);
 
         $make = function (string $tag, array $attributes) use ($brand) {
             return Asset::create(array_merge([
@@ -170,7 +171,9 @@ class AssetFilterTest extends TestCase
         $charts = $response->viewData('page')['props']['charts'];
 
         $this->assertArrayHasKey('id', $charts['by_category'][0]);
-        $this->assertArrayHasKey('id', $charts['by_department'][0]);
+        // Department bars group by department or by location depending on the
+        // location, so they carry a ready-made filter rather than a bare id.
+        $this->assertArrayHasKey('filter', $charts['by_department'][0]);
         $this->assertArrayHasKey('id', $charts['cat_dept']['departments'][0]);
         $this->assertArrayHasKey('category_id', $charts['cat_dept']['rows'][0]);
         $this->assertArrayHasKey('id', $charts['loc_cat']['categories'][0]);
@@ -211,10 +214,10 @@ class AssetFilterTest extends TestCase
         foreach ($charts['charts']['by_category'] as $category) {
             $cases["category {$category['name']}"] = [$category['count'], ['category_id' => $category['id']]];
         }
-        foreach ($charts['charts']['by_department'] as $department) {
-            if ($department['id']) {
-                $cases["department {$department['name']}"] = [$department['count'], ['department_id' => $department['id']]];
-            }
+        // Each bar carries the filter that reproduces it — a department at the
+        // head office, a location elsewhere.
+        foreach ($charts['charts']['by_department'] as $bar) {
+            $cases["bar {$bar['name']}"] = [$bar['count'], $bar['filter']];
         }
         foreach ($charts['charts']['cat_dept']['rows'] as $row) {
             foreach ($charts['charts']['cat_dept']['departments'] as $column) {

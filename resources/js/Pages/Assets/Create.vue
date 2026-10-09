@@ -24,6 +24,7 @@ const form = useForm({
     current_status: props.defaults?.current_status ?? 'in_stock',
     current_holder_id: '',
     current_location_id: '',
+    department_id: null,
     notes: '',
 });
 

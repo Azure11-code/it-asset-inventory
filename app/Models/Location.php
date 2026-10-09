@@ -16,10 +16,11 @@ class Location extends Model
         'name', 'description', 'building', 'floor', 'room', 'address',
     ];
 
-    protected $fillable = ['name', 'description', 'building', 'floor', 'room', 'address', 'is_active'];
+    protected $fillable = ['name', 'description', 'building', 'floor', 'room', 'address', 'is_active', 'has_departments'];
 
     protected $casts = [
-        'is_active' => 'boolean',
+        'is_active'       => 'boolean',
+        'has_departments' => 'boolean',
     ];
 
     public function employees(): HasMany

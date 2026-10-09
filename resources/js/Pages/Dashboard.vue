@@ -87,10 +87,11 @@ const deptOptions = computed(() => ({
     chart: {
         type: 'bar', toolbar: { show: false }, fontFamily: 'Inter, ui-sans-serif, system-ui', foreColor: '#475569',
         events: {
+            // Each bar ships the filter that reproduces it — a department for
+            // head-office bars, a location for the rest.
             dataPointSelection: drillFromChart(
                 () => props.charts.by_department || [],
-                // A bar with no department id is the "(no department)" bucket.
-                (d) => (d.id ? { department_id: d.id } : {}),
+                (d) => d.filter || {},
             ),
         },
     },
@@ -358,7 +359,7 @@ const warrantyTiles = computed(() => [
                 <header class="card-header py-2.5 px-4">
                     <div>
                         <h2 class="card-title text-sm">Assets per Department</h2>
-                        <p class="card-subtitle text-[11px]">Distribution across the organization.</p>
+                        <p class="card-subtitle text-[11px]">By department at the head office, by location everywhere else.</p>
                     </div>
                     <div class="flex items-center gap-1">
                         <button type="button" class="btn-ghost no-print" @click="printSection('section-by-dept')" title="Print section">

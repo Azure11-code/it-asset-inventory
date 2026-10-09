@@ -43,7 +43,7 @@ class AssetController extends Controller implements HasMiddleware
     /** Query-string keys the asset list filters on — also what the dashboard links with. */
     public const FILTER_KEYS = [
         'search', 'status', 'category_id', 'brand_id',
-        'department_id', 'location_id', 'antivirus', 'warranty', 'maintained',
+        'department_id', 'location_id', 'antivirus', 'warranty', 'maintained', 'placement',
     ];
 
     /** Still in service — the dashboard's "Maintained Asset" figure. */
@@ -66,6 +66,14 @@ class AssetController extends Controller implements HasMiddleware
             ->when($request->location_id, fn ($q, $id) => $q->where('assets.current_location_id', $id))
             ->when($request->antivirus, fn ($q, $bucket) => $q->antivirus($bucket))
             ->when($request->boolean('maintained'), fn ($q) => $q->whereNotIn('assets.current_status', self::RETIRED_STATUSES))
+            // Backs the dashboard's "Unassigned" bar: no location at all, or a
+            // location that wants a department but the asset has none.
+            ->when($request->placement === 'unassigned', fn ($q) => $q
+                ->leftJoin('locations as placement_loc', 'assets.current_location_id', '=', 'placement_loc.id')
+                ->where(fn ($w) => $w
+                    ->whereNull('assets.current_location_id')
+                    ->orWhere(fn ($i) => $i->where('placement_loc.has_departments', true)
+                                           ->whereNull('assets.department_id'))))
             ->when($request->warranty, function ($q, $w) {
                 if ($w === 'active')        $q->whereDate('assets.warranty_until', '>', now()->addDays(90));
                 if ($w === 'expiring_soon') $q->whereBetween('assets.warranty_until', [now(), now()->addDays(90)]);
@@ -358,6 +366,7 @@ class AssetController extends Controller implements HasMiddleware
                 'current_status'           => $asset->current_status,
                 'current_holder_id'        => $asset->current_holder_id,
                 'current_location_id'      => $asset->current_location_id,
+                'department_id'            => $asset->department_id,
                 'notes'                    => $asset->notes,
             ],
             'lookups' => $this->lookups(),
@@ -478,8 +487,24 @@ class AssetController extends Controller implements HasMiddleware
             'current_status'         => ['required', Rule::in(['in_stock', 'assigned', 'for_repair', 'defective', 'retired', 'replaced'])],
             'current_holder_id'      => ['nullable', 'exists:employees,id'],
             'current_location_id'    => ['nullable', 'exists:locations,id'],
+            // Required only where the location is organised into departments;
+            // everywhere else the model clears it on save.
+            'department_id'          => [
+                Rule::requiredIf(fn () => $this->locationHasDepartments($request->input('current_location_id'))),
+                'nullable',
+                'exists:departments,id',
+            ],
             'notes'                  => ['nullable', 'string'],
+        ], [
+            'department_id.required' => 'Department is required for assets at this location.',
         ]);
+    }
+
+    /** True when the given location is one that is split into departments. */
+    private function locationHasDepartments($locationId): bool
+    {
+        return $locationId
+            && Location::whereKey($locationId)->value('has_departments');
     }
 
     private function applyWarrantyDefault(array $data): array
@@ -501,12 +526,20 @@ class AssetController extends Controller implements HasMiddleware
                                 ->select('id', 'name', 'tone')
                                 ->orderBy('sort_order')
                                 ->get(),
+            // department_id rides along so the form can pre-fill the asset's
+            // department the moment a holder is picked.
             'employees'  => Employee::where('status', 'active')
                                 ->orderBy('last_name')
-                                ->get(['id', 'first_name', 'middle_name', 'last_name'])
-                                ->map(fn ($e) => ['id' => $e->id, 'name' => $e->full_name])
+                                ->get(['id', 'first_name', 'middle_name', 'last_name', 'department_id'])
+                                ->map(fn ($e) => [
+                                    'id'            => $e->id,
+                                    'name'          => $e->full_name,
+                                    'department_id' => $e->department_id,
+                                ])
                                 ->values(),
-            'locations'  => Location::select('id', 'name')->orderBy('name')->get(),
+            'departments' => \App\Models\Department::select('id', 'name')->orderBy('name')->get(),
+            // has_departments drives whether the form shows the Department field.
+            'locations'  => Location::select('id', 'name', 'has_departments')->orderBy('name')->get(),
             'code_rules' => \App\Models\AssetCodeRule::where('is_active', true)
                                 ->orderBy('sort_order')->orderBy('prefix_start')
                                 ->get(['id', 'label', 'prefix_start', 'prefix_end', 'category_id'])
