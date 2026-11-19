@@ -317,6 +317,12 @@ Route::middleware('auth')->group(function () {
             'location-x-category-' . now()->format('Ymd-His') . '.xlsx');
     })->name('dashboard.export.locCat')->middleware('perm:assets,export');
 
+    // Returns to the asset list as it was last seen — the filters and page the
+    // user left behind. Must stay above the resource route, or "back" would be
+    // read as an {asset} id.
+    Route::get('assets/back', fn () => redirect()->route('assets.index', session('assets.list_query', [])))
+        ->name('assets.back');
+
     Route::get('assets/bulk-receive',     [AssetController::class, 'bulkReceiveForm'])->name('assets.bulkReceive');
     Route::post('assets/bulk-receive',    [AssetController::class, 'bulkStore'])->name('assets.bulkStore');
     Route::get('assets/export',           [AssetController::class, 'export'])->name('assets.export');
@@ -342,6 +348,10 @@ Route::middleware('auth')->group(function () {
         ->only(['index', 'store', 'update', 'destroy'])
         ->parameters(['asset-code-rules' => 'rule']);
     Route::get('asset-code-rules/{rule}/next', [AssetCodeRuleController::class, 'next'])->name('asset-code-rules.next');
+    // Same idea as assets/back, and likewise above the resource route.
+    Route::get('employees/back', fn () => redirect()->route('employees.index', session('employees.list_query', [])))
+        ->name('employees.back');
+
     Route::resource('employees',   EmployeeController::class)->only(['index', 'store', 'update', 'destroy', 'show']);
     Route::get('employees/{employee}/assets', [EmployeeController::class, 'assets'])->name('employees.assets');
     Route::get('employees/{employee}/accountability.docx', [EmployeeController::class, 'accountability'])->name('employees.accountability');

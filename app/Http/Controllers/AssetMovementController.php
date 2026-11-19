@@ -163,10 +163,16 @@ class AssetMovementController extends Controller implements HasMiddleware
             return back()->withErrors(['to_employee_id' => 'Pick at least a new employee or location.']);
         }
 
-        DB::transaction(function () use ($asset, $data, $request) {
+        // Transferring an asset nobody holds is not a handover, it is the
+        // first issuance. Recording it as a transfer leaves a row whose source
+        // is empty, which then reads as "From — → Someone" on the employee's
+        // timeline.
+        $isFirstIssuance = $asset->current_holder_id === null && !empty($data['to_employee_id']);
+
+        DB::transaction(function () use ($asset, $data, $request, $isFirstIssuance) {
             AssetMovement::create([
                 'asset_id'         => $asset->id,
-                'type'             => 'transfer',
+                'type'             => $isFirstIssuance ? 'issuance' : 'transfer',
                 'from_employee_id' => $asset->current_holder_id,
                 'to_employee_id'   => $data['to_employee_id'] ?? $asset->current_holder_id,
                 'from_location_id' => $asset->current_location_id,

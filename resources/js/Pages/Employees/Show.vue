@@ -1,10 +1,11 @@
 <script setup>
 import { computed, ref } from 'vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PageHeader from '@/Components/PageHeader.vue';
 import Badge from '@/Components/Badge.vue';
 import Attachments from '@/Components/Attachments.vue';
+import EmployeeFormModal from '@/Components/EmployeeFormModal.vue';
 import {
     ChevronLeftIcon, EnvelopeIcon, PhoneIcon, BuildingOffice2Icon, MapPinIcon,
     CalendarIcon, DocumentTextIcon, CpuChipIcon, ArrowsRightLeftIcon,
@@ -25,7 +26,13 @@ const props = defineProps({
     recommendations: Array,
     attachments:     Array,
     stats:           Object,
+    departments:     { type: Array, default: () => [] },
+    locations:       { type: Array, default: () => [] },
 });
+
+// Editing happens here, in a modal, rather than bouncing to the list page.
+const showEdit = ref(false);
+const onSaved = () => router.reload({ only: ['employee'] });
 
 const initials = computed(() => {
     const f = (props.employee.first_name || '').charAt(0);
@@ -73,6 +80,15 @@ const recStatusTone = {
 
 const movementLabel = { issuance: 'Issued', return: 'Returned', transfer: 'Transferred' };
 
+/**
+ * A transfer needs someone to transfer *from*. When there is no previous
+ * holder the asset was handed out for the first time, so it reads as an
+ * issuance however the row happens to be typed — otherwise the timeline shows
+ * "Transferred … From — → Annika", which describes a handover that never
+ * happened.
+ */
+const movementKind = (m) => (m.type === 'transfer' && !m.from_employee ? 'issuance' : m.type);
+
 // ── Local attachments ref so Attachments component's @updated event can update the list in-place ──
 const localAttachments = ref([...props.attachments]);
 const reloadAttachments = async () => {
@@ -89,15 +105,15 @@ const reloadAttachments = async () => {
         <template #header>
             <PageHeader :title="employee.full_name" :subtitle="employee.position || 'No position on file'">
                 <template #actions>
-                    <Link href="/employees" class="btn-secondary">
+                    <Link href="/employees/back" class="btn-secondary">
                         <ChevronLeftIcon class="h-4 w-4" /> Back to list
                     </Link>
                     <a v-if="can('accountability', 'print')" :href="`/accountability/${employee.id}/download`" class="btn-secondary">
                         <ArrowDownTrayIcon class="h-4 w-4" /> Accountability form
                     </a>
-                    <Link v-if="can('employees', 'edit')" :href="`/employees?edit=${employee.id}`" class="btn-primary">
+                    <button v-if="can('employees', 'edit')" type="button" class="btn-primary" @click="showEdit = true">
                         <PencilSquareIcon class="h-4 w-4" /> Edit
-                    </Link>
+                    </button>
                 </template>
             </PageHeader>
         </template>
@@ -271,8 +287,8 @@ const reloadAttachments = async () => {
                     <span
                         :class="[
                             'absolute -left-[15px] top-1 flex h-4 w-4 items-center justify-center rounded-full ring-2 ring-white',
-                            m.type === 'issuance' ? 'bg-emerald-500'
-                                : m.type === 'return' ? 'bg-sky-500'
+                            movementKind(m) === 'issuance' ? 'bg-emerald-500'
+                                : movementKind(m) === 'return' ? 'bg-sky-500'
                                 : 'bg-indigo-500',
                         ]"
                     >
@@ -283,17 +299,17 @@ const reloadAttachments = async () => {
                     </span>
                     <div class="text-[12.5px]">
                         <div class="flex flex-wrap items-baseline gap-x-2">
-                            <span class="font-medium text-slate-900">{{ movementLabel[m.type] || m.type }}</span>
+                            <span class="font-medium text-slate-900">{{ movementLabel[movementKind(m)] || m.type }}</span>
                             <Link v-if="m.asset_id" :href="`/assets/${m.asset_id}`" class="font-mono text-brand-600 hover:underline">
                                 {{ m.asset_tag }}
                             </Link>
                             <span class="text-slate-500">{{ fmt(m.movement_date) }}</span>
                         </div>
                         <div class="text-[11px] text-slate-500">
-                            <template v-if="m.type === 'issuance'">
+                            <template v-if="movementKind(m) === 'issuance'">
                                 Issued to <b>{{ m.to_employee }}</b>
                             </template>
-                            <template v-else-if="m.type === 'return'">
+                            <template v-else-if="movementKind(m) === 'return'">
                                 Returned by <b>{{ m.from_employee }}</b>
                             </template>
                             <template v-else>
@@ -422,6 +438,15 @@ const reloadAttachments = async () => {
                 @updated="reloadAttachments"
             />
         </section>
+
+        <EmployeeFormModal
+            :show="showEdit"
+            :employee="employee"
+            :departments="departments"
+            :locations="locations"
+            @close="showEdit = false"
+            @saved="onSaved"
+        />
     </AppLayout>
 </template>
 

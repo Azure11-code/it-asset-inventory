@@ -226,7 +226,7 @@ const deletePart = () => router.delete(`/assets/${props.asset.id}/part-changes/$
         <template #header>
             <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div class="min-w-0">
-                    <Link href="/assets" class="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700">
+                    <Link href="/assets/back" class="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-700">
                         <ChevronLeftIcon class="h-3.5 w-3.5" /> Back to assets
                     </Link>
                     <h1 class="mt-1 text-lg sm:text-xl font-semibold tracking-tight text-slate-900 leading-tight break-all">{{ asset.asset_tag }}</h1>

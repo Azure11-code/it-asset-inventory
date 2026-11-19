@@ -18,6 +18,14 @@ use Inertia\Inertia;
 
 class AssetController extends Controller implements HasMiddleware
 {
+    use \App\Http\Controllers\Concerns\RemembersListQuery;
+
+    /** @see RemembersListQuery — the filters the asset list is viewed by. */
+    protected function listQueryKeys(): array
+    {
+        return [...self::FILTER_KEYS, 'sort', 'direction'];
+    }
+
     public static function middleware(): array
     {
         return [
@@ -132,6 +140,10 @@ class AssetController extends Controller implements HasMiddleware
                 'service_duration_formatted' => $a->service_duration_formatted,
                 'is_eligible_for_replacement' => $a->is_eligible_for_replacement,
             ]);
+
+        // Remember how this list was being viewed, so "Back to assets" and the
+        // sidebar link can return to it rather than the default list.
+        $this->rememberListQuery($request, 'assets.list_query', $assets->currentPage());
 
         return Inertia::render('Assets/Index', [
             'assets'  => $assets,

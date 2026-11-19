@@ -14,6 +14,7 @@ import Combobox from '@/Components/Combobox.vue';
 import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon, UsersIcon, CpuChipIcon, ArrowTopRightOnSquareIcon, DocumentTextIcon, ArrowDownTrayIcon, EyeIcon } from '@heroicons/vue/24/outline';
 import { Link } from '@inertiajs/vue3';
 import { usePermissions } from '@/composables/usePermissions';
+import { useListState } from '@/composables/useListState';
 
 const { can } = usePermissions();
 
@@ -66,6 +67,11 @@ const refresh = () => {
         });
     }, 1000);
 };
+// A refresh resets this list to the default view. What the user last had is
+// remembered server-side and restored by /employees/back.
+useListState();
+
+// Changing any filter goes back to page 1 — refresh() omits `page`.
 watch([search, departmentFilter, statusFilter], refresh);
 
 const hasFilters = computed(() => search.value || departmentFilter.value || statusFilter.value);
@@ -208,7 +214,8 @@ const initials = (row) => `${row.first_name?.charAt(0) ?? ''}${row.last_name?.ch
                                         </div>
                                         <div class="min-w-0">
                                             <div class="cell-strong truncate flex items-center gap-2">
-                                                <span>{{ row.last_name }}, {{ row.first_name }}{{ row.middle_name ? ' ' + row.middle_name.charAt(0) + '.' : '' }}</span>
+                                                <!-- Shown uppercase; the stored name keeps its own casing. -->
+                                                <span class="uppercase">{{ row.last_name }}, {{ row.first_name }}{{ row.middle_name ? ' ' + row.middle_name.charAt(0) + '.' : '' }}</span>
                                                 <Badge v-if="row.held_assets_count > 0" tone="brand" class="!py-0 !px-1.5 text-[10px]">
                                                     {{ row.held_assets_count }} {{ row.held_assets_count === 1 ? 'asset' : 'assets' }}
                                                 </Badge>

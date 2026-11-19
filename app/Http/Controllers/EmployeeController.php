@@ -16,6 +16,14 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class EmployeeController extends Controller implements HasMiddleware
 {
+    use \App\Http\Controllers\Concerns\RemembersListQuery;
+
+    /** @see RemembersListQuery — the filters the employee list is viewed by. */
+    protected function listQueryKeys(): array
+    {
+        return ['search', 'department_id', 'status', 'sort', 'direction'];
+    }
+
     public static function middleware(): array
     {
         return [
@@ -54,6 +62,10 @@ class EmployeeController extends Controller implements HasMiddleware
             ->orderBy($sortCol, $direction)
             ->paginate(10)
             ->withQueryString();
+
+        // Remember how this list was being viewed, so "Back to list" and the
+        // sidebar link can return to it rather than the default list.
+        $this->rememberListQuery($request, 'employees.list_query', $employees->currentPage());
 
         return Inertia::render('Employees/Index', [
             'employees'   => $employees,
@@ -206,6 +218,9 @@ class EmployeeController extends Controller implements HasMiddleware
                 'position'      => $employee->position,
                 'department'    => $employee->department?->name,
                 'location'      => $employee->location?->name,
+                // The ids are what the edit form binds to.
+                'department_id' => $employee->department_id,
+                'location_id'   => $employee->location_id,
                 'date_hired'    => $employee->date_hired?->format('Y-m-d'),
                 'date_resigned' => $employee->date_resigned?->format('Y-m-d'),
                 'status'        => $employee->status,
@@ -216,6 +231,9 @@ class EmployeeController extends Controller implements HasMiddleware
             'permits'         => $permits,
             'incidents'       => $incidents,
             'recommendations' => $recommendations,
+            // So "Edit" can open the form here instead of navigating away.
+            'departments'     => Department::select('id', 'name')->orderBy('name')->get(),
+            'locations'       => Location::select('id', 'name')->orderBy('name')->get(),
             'attachments'     => $employee->attachments->map(fn ($a) => [
                 'id'            => $a->id,
                 'original_name' => $a->original_name,
@@ -264,6 +282,31 @@ class EmployeeController extends Controller implements HasMiddleware
         ]);
     }
 
+    /** A shared warehouse mailbox: "<site>whse@…" for clerks, "<site>_bdo@…" for BDOs. */
+    public const SHARED_MAILBOX_PATTERN = '/^[a-z0-9]+(whse|_bdo)@/i';
+
+    /**
+     * Email must be unique per employee, except for the shared station
+     * mailboxes that warehouse staff genuinely share.
+     */
+    private function uniqueUnlessSharedMailbox(?Employee $employee): callable
+    {
+        return function (string $attribute, $value, callable $fail) use ($employee) {
+            $value = trim((string) $value);
+            if ($value === '' || preg_match(self::SHARED_MAILBOX_PATTERN, $value)) {
+                return;
+            }
+
+            $taken = Employee::where('email', $value)
+                ->when($employee, fn ($q) => $q->whereKeyNot($employee->id))
+                ->exists();
+
+            if ($taken) {
+                $fail('This email address is already used by another employee.');
+            }
+        };
+    }
+
     private function validateData(Request $request, ?Employee $employee = null): array
     {
         return $request->validate([
@@ -271,7 +314,10 @@ class EmployeeController extends Controller implements HasMiddleware
             'first_name'    => ['required', 'string', 'max:255'],
             'middle_name'   => ['nullable', 'string', 'max:255'],
             'last_name'     => ['required', 'string', 'max:255'],
-            'email'         => ['nullable', 'email', 'max:255', Rule::unique('employees', 'email')->ignore($employee?->id)],
+            // Shared station mailboxes (bacolodwhse@…, cebu_bdo@…) may repeat —
+            // several warehouse staff use one address. Everything else is still
+            // one address per person.
+            'email'         => ['nullable', 'email', 'max:255', $this->uniqueUnlessSharedMailbox($employee)],
             'contact_no'    => ['nullable', 'string', 'max:50'],
             'position'      => ['nullable', 'string', 'max:255'],
             'department_id' => ['nullable', 'exists:departments,id'],

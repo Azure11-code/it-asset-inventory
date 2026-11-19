@@ -9,6 +9,7 @@ import Badge from '@/Components/Badge.vue';
 import SortableTh from '@/Components/SortableTh.vue';
 import Combobox from '@/Components/Combobox.vue';
 import Modal from '@/Components/Modal.vue';
+import { useListState } from '@/composables/useListState';
 import { PlusIcon, EyeIcon, MagnifyingGlassIcon, CpuChipIcon, ArchiveBoxArrowDownIcon, ArrowDownTrayIcon, ArrowUpTrayIcon, DocumentArrowDownIcon } from '@heroicons/vue/24/outline';
 import { usePermissions } from '@/composables/usePermissions';
 
@@ -87,6 +88,12 @@ const refresh = () => {
         });
     }, 1000);
 };
+// Restores the list exactly as it was left; a refresh clears it instead.
+// A refresh resets this list to the default view. What the user last had is
+// remembered server-side and restored by /assets/back.
+useListState();
+
+// Changing any filter goes back to page 1 — refresh() omits `page`.
 watch([search, status, category, brand, department, location, antivirus, warranty], refresh);
 
 const hasFilters = computed(() => Object.values(activeFilters.value).some(Boolean));
@@ -100,6 +107,7 @@ const clearFilters = () => {
     location.value = '';
     antivirus.value = '';
     warranty.value = '';
+    listState.clear();
 };
 
 const statusTone = {

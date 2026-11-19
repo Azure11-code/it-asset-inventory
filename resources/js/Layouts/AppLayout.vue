@@ -64,9 +64,11 @@ const formatCount = (n) => {
 
 const rawPrimaryNav = computed(() => [
     { name: 'Dashboard', href: '/',          icon: HomeIcon,                                                                    tour: 'nav-dashboard' },
-    { name: 'Assets',    href: '/assets',    icon: CpuChipIcon,             count: formatCount(counts.value.assets),            tour: 'nav-assets',    resource: 'assets' },
+    // `goTo` returns to the list as the user last had it; `href` stays the
+    // plain path so the active-state highlighting still matches the URL.
+    { name: 'Assets',    href: '/assets',    goTo: '/assets/back',    icon: CpuChipIcon, count: formatCount(counts.value.assets),    tour: 'nav-assets',    resource: 'assets' },
     { name: 'Scan',      href: '/scan',      icon: QrCodeIcon,                                                                                          resource: 'scan' },
-    { name: 'Employees', href: '/employees', icon: UsersIcon,               count: formatCount(counts.value.employees),         tour: 'nav-employees', resource: 'employees' },
+    { name: 'Employees', href: '/employees', goTo: '/employees/back', icon: UsersIcon,   count: formatCount(counts.value.employees), tour: 'nav-employees', resource: 'employees' },
     { name: 'Users',     href: '/users',     icon: ShieldCheckIcon,         count: formatCount(counts.value.users),                                     adminOnly: true },
 ]);
 
@@ -269,7 +271,7 @@ onMounted(() => {
                 <ul class="space-y-1">
                     <li v-for="item in primaryNav" :key="item.name">
                         <Link
-                            :href="item.href"
+                            :href="item.goTo || item.href"
                             :data-tour="item.tour"
                             :class="[
                                 'group flex items-center justify-between rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors',
@@ -321,7 +323,7 @@ onMounted(() => {
                     <ul v-if="documentsOpen" class="mt-1 space-y-1">
                         <li v-for="item in documentsNav" :key="item.name">
                             <Link
-                                :href="item.href"
+                                :href="item.goTo || item.href"
                                 :data-tour="item.tour"
                                 :class="[
                                     'group flex items-center justify-between rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors',
@@ -375,7 +377,7 @@ onMounted(() => {
                     <ul v-if="masterOpen" class="mt-1 space-y-1">
                         <li v-for="item in masterNav" :key="item.name">
                             <Link
-                                :href="item.href"
+                                :href="item.goTo || item.href"
                                 :class="[
                                     'group flex items-center justify-between rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors',
                                     isActive(item.href)
