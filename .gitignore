@@ -21,3 +21,10 @@ yarn-error.log
 # Per-machine HTTPS cert — generate with scripts/generate-cert.sh, never commit
 /docker/nginx/certs/*.crt
 /docker/nginx/certs/*.key
+
+# Database dumps and staff data exports — these carry real names, emails and
+# employee numbers, so they stay on the machine that made them.
+/backups/
+/employees.csv
+/employees_full.tsv
+/assign-assets-report.txt
