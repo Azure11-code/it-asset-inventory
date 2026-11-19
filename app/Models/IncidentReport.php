@@ -39,10 +39,10 @@ class IncidentReport extends Model
 
     public function asset(): BelongsTo            { return $this->belongsTo(Asset::class); }
     public function endUser(): BelongsTo          { return $this->belongsTo(Employee::class, 'end_user_employee_id'); }
-    public function preparedBy(): BelongsTo       { return $this->belongsTo(User::class, 'prepared_by_user_id'); }
-    public function notedBy(): BelongsTo          { return $this->belongsTo(User::class, 'noted_by_user_id'); }
-    public function notedBySecondary(): BelongsTo { return $this->belongsTo(User::class, 'noted_by_secondary_user_id'); }
-    public function approvedBy(): BelongsTo       { return $this->belongsTo(User::class, 'approved_by_user_id'); }
+    public function preparedBy(): BelongsTo       { return $this->belongsTo(Employee::class, 'prepared_by_user_id'); }
+    public function notedBy(): BelongsTo          { return $this->belongsTo(Employee::class, 'noted_by_user_id'); }
+    public function notedBySecondary(): BelongsTo { return $this->belongsTo(Employee::class, 'noted_by_secondary_user_id'); }
+    public function approvedBy(): BelongsTo       { return $this->belongsTo(Employee::class, 'approved_by_user_id'); }
     public function partChanges(): HasMany        { return $this->hasMany(AssetPartChange::class); }
 
     public static function nextDocNo(): string

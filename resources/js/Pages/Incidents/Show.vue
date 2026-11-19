@@ -22,10 +22,11 @@ const props = defineProps({
 
 const statusTone = { draft: 'slate', submitted: 'sky', approved: 'emerald', closed: 'slate' };
 
+// Printed documents spell the date out in full: "November 16, 2026".
 const fmtDate = (s) => {
     if (!s) return '';
     const d = new Date(s);
-    return d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: '2-digit' });
+    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
 const bullets = (text) =>

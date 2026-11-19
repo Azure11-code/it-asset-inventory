@@ -238,16 +238,16 @@ const cancel = () => router.visit(isEdit.value ? `/permits/${props.permit.id}` :
                         <Combobox v-model="form.requested_by_employee_id" :options="lookups.employees" placeholder="Search employee…" />
                     </FormField>
                     <FormField label="Issued By (user)" :error="form.errors.issued_by_user_id">
-                        <Combobox v-model="form.issued_by_user_id" :options="lookups.users" placeholder="Search user…" />
+                        <Combobox v-model="form.issued_by_user_id" :options="lookups.signatories" placeholder="Search IT staff…" />
                     </FormField>
                     <FormField label="Noted By — IT Head (user)" :error="form.errors.noted_by_user_id">
-                        <Combobox v-model="form.noted_by_user_id" :options="lookups.users" placeholder="Search user…" />
+                        <Combobox v-model="form.noted_by_user_id" :options="lookups.signatories" placeholder="Search IT staff…" />
                     </FormField>
                     <FormField label="Noted By — Supervisor (user)" :error="form.errors.noted_by_secondary_user_id">
-                        <Combobox v-model="form.noted_by_secondary_user_id" :options="lookups.users" placeholder="Search user…" />
+                        <Combobox v-model="form.noted_by_secondary_user_id" :options="lookups.signatories" placeholder="Search IT staff…" />
                     </FormField>
                     <FormField label="Approved By (user)" :error="form.errors.approved_by_user_id">
-                        <Combobox v-model="form.approved_by_user_id" :options="lookups.users" placeholder="Search user…" />
+                        <Combobox v-model="form.approved_by_user_id" :options="lookups.approvers" placeholder="Search Management staff…" />
                     </FormField>
                     <FormField label="Approval Note" :error="form.errors.approval_note">
                         <input v-model="form.approval_note" type="text" class="input" placeholder="e.g. THRU VIBER APPROVAL PLEASE SEE ATTACHED FILE" />

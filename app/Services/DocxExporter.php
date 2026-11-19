@@ -8,6 +8,7 @@ use App\Models\Recommendation;
 use Illuminate\Support\Carbon;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\Settings;
 use PhpOffice\PhpWord\Shared\Converter;
 use PhpOffice\PhpWord\SimpleType\Jc;
 use PhpOffice\PhpWord\Style\Font;
@@ -106,13 +107,13 @@ class DocxExporter
         $sigCellWidth = (int) ((self::PAGE_W - self::MARGIN_X * 2) / 2);
         $this->addSignatureCells($sigTable, [
             ['label' => 'Requested By', 'name' => $this->resolveName($permit->requestedBy?->name, $employee?->full_name)],
-            ['label' => 'Issued By',    'name' => $permit->issuedBy?->name],
+            ['label' => 'Issued By',    'name' => $permit->issuedBy?->full_name],
         ], $sigCellWidth);
         $this->addSignatureCells($sigTable, [
             ['label' => 'Noted By', 'name' =>
-                trim(($permit->notedBy?->name ?? '') . ($permit->notedBy && $permit->notedBySecondary ? ' & ' : '') . ($permit->notedBySecondary?->name ?? '')),
+                trim(($permit->notedBy?->full_name ?? '') . ($permit->notedBy && $permit->notedBySecondary ? ' & ' : '') . ($permit->notedBySecondary?->full_name ?? '')),
                 'role'  => 'IT Head & Supervisor'],
-            ['label' => 'Approved By', 'name' => $permit->approval_note ?: ($permit->approvedBy?->name ?? ''),
+            ['label' => 'Approved By', 'name' => $permit->approval_note ?: ($permit->approvedBy?->full_name ?? ''),
                 'italic' => (bool) $permit->approval_note,
                 'role'  => 'Manager / COO / CFO / CEO'],
         ], $sigCellWidth);
@@ -168,8 +169,8 @@ class DocxExporter
                 ->filter()->implode(' | ');
             $this->addLabelRow($section, 'Specification', $specs ?: '—', 160, 11);
             $this->addLabelRow($section, 'Serial Number', $asset->serial_number ?: '—', 160, 11);
-            $this->addLabelRow($section, 'Purchase Date', $asset->purchase_date?->format('M d, Y') ?: '—', 160, 11);
-            $this->addLabelRow($section, 'Deployed Date', $asset->deployment_date?->format('M d, Y') ?: '—', 160, 11);
+            $this->addLabelRow($section, 'Purchase Date', $asset->purchase_date?->format('F j, Y') ?: '—', 160, 11);
+            $this->addLabelRow($section, 'Deployed Date', $asset->deployment_date?->format('F j, Y') ?: '—', 160, 11);
             $lifespan = $asset->expected_lifespan_years ?? 5;
             $this->addLabelRow($section, 'Life Span', "{$lifespan} ({$lifespan}) YEARS", 160, 11);
             $section->addTextBreak(1);
@@ -187,15 +188,15 @@ class DocxExporter
             ['alignment' => Jc::CENTER, 'spaceAfter' => 200]);
 
         // Signatures: 3 stacked left, then Approved By below on the right
-        $this->addIRSignerLine($section, 'Prepared by', $report->preparedBy?->name, 'IT Associate - Junior Technical');
-        $this->addIRSignerLine($section, 'Noted by',    $report->notedBy?->name,          'IT - MIS Head');
-        $this->addIRSignerLine($section, 'Noted by',    $report->notedBySecondary?->name, 'IT - Technical Head');
+        $this->addIRSignerLine($section, 'Prepared by', $report->preparedBy?->full_name, 'IT Associate - Junior Technical');
+        $this->addIRSignerLine($section, 'Noted by',    $report->notedBy?->full_name,          'IT - MIS Head');
+        $this->addIRSignerLine($section, 'Noted by',    $report->notedBySecondary?->full_name, 'IT - Technical Head');
 
         $section->addTextBreak(1);
         $section->addText('Approved By:',
             ['name' => self::FONT_FAMILY, 'size' => 11, 'bold' => true],
             ['alignment' => Jc::END, 'spaceAfter' => 60]);
-        $section->addText($report->approvedBy?->name ?: '',
+        $section->addText($report->approvedBy?->full_name ?: '',
             ['name' => self::FONT_FAMILY, 'size' => 11, 'italic' => true, 'bold' => true],
             ['alignment' => Jc::END, 'spaceAfter' => 40]);
         $section->addText('CFO – Executive',
@@ -288,7 +289,7 @@ class DocxExporter
         $cell = $sigTable->addCell($cw, ['valign' => 'top']);
         $tr = $cell->addTextRun();
         $tr->addText('Prepared By: ', ['name' => self::FONT_FAMILY, 'size' => 11, 'bold' => true]);
-        $tr->addText($rec->preparedBy?->name ?: '', ['name' => self::FONT_FAMILY, 'size' => 11, 'italic' => true]);
+        $tr->addText($rec->preparedBy?->full_name ?: '', ['name' => self::FONT_FAMILY, 'size' => 11, 'italic' => true]);
         $cell->addText('IT Associate – Junior Technical',
             ['name' => self::FONT_FAMILY, 'size' => 10, 'bold' => true]);
         $sigTable->addCell($cw); // empty right
@@ -298,14 +299,14 @@ class DocxExporter
         $cell = $sigTable->addCell($cw, ['valign' => 'top']);
         $tr = $cell->addTextRun();
         $tr->addText('Review By: ', ['name' => self::FONT_FAMILY, 'size' => 11, 'bold' => true]);
-        $tr->addText($rec->reviewedBy?->name ?: '', ['name' => self::FONT_FAMILY, 'size' => 11, 'italic' => true]);
+        $tr->addText($rec->reviewedBy?->full_name ?: '', ['name' => self::FONT_FAMILY, 'size' => 11, 'italic' => true]);
         $cell->addText('IT Technical Head – Network Specialist',
             ['name' => self::FONT_FAMILY, 'size' => 10, 'bold' => true]);
 
         $cell = $sigTable->addCell($cw, ['valign' => 'top']);
         $tr = $cell->addTextRun(['alignment' => Jc::END]);
         $tr->addText('Note by: ', ['name' => self::FONT_FAMILY, 'size' => 11, 'bold' => true]);
-        $tr->addText($rec->notedBy?->name ?: '', ['name' => self::FONT_FAMILY, 'size' => 11, 'italic' => true]);
+        $tr->addText($rec->notedBy?->full_name ?: '', ['name' => self::FONT_FAMILY, 'size' => 11, 'italic' => true]);
         $cell->addText('CFO-Executive Department',
             ['name' => self::FONT_FAMILY, 'size' => 10, 'bold' => true], ['alignment' => Jc::END]);
 
@@ -316,6 +317,14 @@ class DocxExporter
 
     private function newDocument(): PhpWord
     {
+        // PhpWord writes text straight into document.xml unescaped unless this
+        // is on, so an "&", "<" or ">" anywhere in a subject, body or asset
+        // description produces a file Word refuses to open ("Xml parsing
+        // error"). It is a process-wide setting; we set it on every document
+        // rather than once at boot so the guarantee travels with the code that
+        // needs it.
+        Settings::setOutputEscapingEnabled(true);
+
         $word = new PhpWord();
         $word->setDefaultFontName(self::FONT_FAMILY);
         $word->setDefaultFontSize(11);
@@ -451,9 +460,10 @@ class DocxExporter
             ->filter()->values()->all();
     }
 
+    /** Printed documents spell the date out in full: "November 16, 2026". */
     private function date($d): string
     {
-        return $d instanceof Carbon ? $d->format('d-M-y') : (string) ($d ?? '');
+        return $d instanceof Carbon ? $d->format('F j, Y') : (string) ($d ?? '');
     }
 
     private function resolveName(?string ...$candidates): string

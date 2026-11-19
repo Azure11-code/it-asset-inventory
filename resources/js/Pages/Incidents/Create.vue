@@ -134,16 +134,16 @@ const cancel = () => router.visit(isEdit.value ? `/incidents/${props.report.id}`
                 </header>
                 <div class="grid gap-4 p-5 sm:grid-cols-2">
                     <FormField label="Prepared By" :error="form.errors.prepared_by_user_id">
-                        <Combobox v-model="form.prepared_by_user_id" :options="lookups.users" placeholder="Search user…" />
+                        <Combobox v-model="form.prepared_by_user_id" :options="lookups.signatories" placeholder="Search IT staff…" />
                     </FormField>
                     <FormField label="Noted By — IT MIS Head" :error="form.errors.noted_by_user_id">
-                        <Combobox v-model="form.noted_by_user_id" :options="lookups.users" placeholder="Search user…" />
+                        <Combobox v-model="form.noted_by_user_id" :options="lookups.signatories" placeholder="Search IT staff…" />
                     </FormField>
                     <FormField label="Noted By — IT Technical Head" :error="form.errors.noted_by_secondary_user_id">
-                        <Combobox v-model="form.noted_by_secondary_user_id" :options="lookups.users" placeholder="Search user…" />
+                        <Combobox v-model="form.noted_by_secondary_user_id" :options="lookups.signatories" placeholder="Search IT staff…" />
                     </FormField>
                     <FormField label="Approved By (Executive)" :error="form.errors.approved_by_user_id">
-                        <Combobox v-model="form.approved_by_user_id" :options="lookups.users" placeholder="Search user…" />
+                        <Combobox v-model="form.approved_by_user_id" :options="lookups.approvers" placeholder="Search Management staff…" />
                     </FormField>
                 </div>
             </section>

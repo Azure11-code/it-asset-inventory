@@ -42,10 +42,10 @@ class AssetPermit extends Model
 
     public function employee(): BelongsTo          { return $this->belongsTo(Employee::class); }
     public function requestedBy(): BelongsTo       { return $this->belongsTo(Employee::class, 'requested_by_employee_id'); }
-    public function issuedBy(): BelongsTo          { return $this->belongsTo(User::class, 'issued_by_user_id'); }
-    public function notedBy(): BelongsTo           { return $this->belongsTo(User::class, 'noted_by_user_id'); }
-    public function notedBySecondary(): BelongsTo  { return $this->belongsTo(User::class, 'noted_by_secondary_user_id'); }
-    public function approvedBy(): BelongsTo        { return $this->belongsTo(User::class, 'approved_by_user_id'); }
+    public function issuedBy(): BelongsTo          { return $this->belongsTo(Employee::class, 'issued_by_user_id'); }
+    public function notedBy(): BelongsTo           { return $this->belongsTo(Employee::class, 'noted_by_user_id'); }
+    public function notedBySecondary(): BelongsTo  { return $this->belongsTo(Employee::class, 'noted_by_secondary_user_id'); }
+    public function approvedBy(): BelongsTo        { return $this->belongsTo(Employee::class, 'approved_by_user_id'); }
     public function items(): HasMany               { return $this->hasMany(AssetPermitItem::class)->orderBy('sort_order')->orderBy('id'); }
 
     public static function nextPermitNo(): string

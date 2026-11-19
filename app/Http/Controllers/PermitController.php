@@ -201,10 +201,10 @@ class PermitController extends Controller implements HasMiddleware
             'valid_from'                 => ['required', 'date'],
             'valid_to'                   => ['required', 'date', 'after_or_equal:valid_from'],
             'requested_by_employee_id'   => ['nullable', 'exists:employees,id'],
-            'issued_by_user_id'          => ['nullable', 'exists:users,id'],
-            'noted_by_user_id'           => ['nullable', 'exists:users,id'],
-            'noted_by_secondary_user_id' => ['nullable', 'exists:users,id'],
-            'approved_by_user_id'        => ['nullable', 'exists:users,id'],
+            'issued_by_user_id'          => ['nullable', 'exists:employees,id'],
+            'noted_by_user_id'           => ['nullable', 'exists:employees,id'],
+            'noted_by_secondary_user_id' => ['nullable', 'exists:employees,id'],
+            'approved_by_user_id'        => ['nullable', 'exists:employees,id'],
             'approval_note'              => ['nullable', 'string', 'max:255'],
             'status'                     => ['required', \Illuminate\Validation\Rule::in(['draft', 'approved', 'returned', 'cancelled'])],
             'items'                      => ['required', 'array', 'min:1'],
@@ -260,10 +260,10 @@ class PermitController extends Controller implements HasMiddleware
                 'department' => $permit->employee?->department?->name ?? $permit->department_text,
             ],
             'requested_by'       => $permit->requestedBy?->full_name,
-            'issued_by'          => $permit->issuedBy?->name,
-            'noted_by'           => $permit->notedBy?->name,
-            'noted_by_secondary' => $permit->notedBySecondary?->name,
-            'approved_by'        => $permit->approvedBy?->name,
+            'issued_by'          => $permit->issuedBy?->full_name,
+            'noted_by'           => $permit->notedBy?->full_name,
+            'noted_by_secondary' => $permit->notedBySecondary?->full_name,
+            'approved_by'        => $permit->approvedBy?->full_name,
             'items'              => $permit->items->map(fn ($it) => [
                 'qty'         => $it->qty,
                 'unit'        => $it->unit,
@@ -286,8 +286,9 @@ class PermitController extends Controller implements HasMiddleware
                     'department_id' => $e->department_id,
                     'location_id'   => $e->location_id,
                 ])->values(),
-            'users'  => User::orderBy('name')->get(['id', 'name'])
-                ->map(fn ($u) => ['id' => $u->id, 'name' => $u->name])->values(),
+            // IT staff issue and note the permit; Management approves it.
+            'signatories' => Employee::signatoryOptions(Employee::SIGNS_AS_PREPARER),
+            'approvers'   => Employee::signatoryOptions(Employee::SIGNS_AS_APPROVER),
             'assets' => Asset::select('id', 'asset_tag', 'serial_number', 'model', 'description')
                 ->orderBy('asset_tag')
                 ->get()

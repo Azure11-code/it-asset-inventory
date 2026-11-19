@@ -194,13 +194,14 @@ const cancel = () => router.visit(isEdit.value ? `/recommendations/${props.recom
                 </header>
                 <div class="grid gap-4 p-5 sm:grid-cols-3">
                     <FormField label="Prepared By" :error="form.errors.prepared_by_user_id">
-                        <Combobox v-model="form.prepared_by_user_id" :options="lookups.users" placeholder="Search user…" />
+                        <Combobox v-model="form.prepared_by_user_id" :options="lookups.signatories" placeholder="Search IT staff…" />
                     </FormField>
                     <FormField label="Review By" :error="form.errors.reviewed_by_user_id">
-                        <Combobox v-model="form.reviewed_by_user_id" :options="lookups.users" placeholder="Search user…" />
+                        <Combobox v-model="form.reviewed_by_user_id" :options="lookups.signatories" placeholder="Search IT staff…" />
                     </FormField>
+                    <!-- The executive slot, like the IR's "Approved By" — Management, not IT. -->
                     <FormField label="Note By (Executive)" :error="form.errors.noted_by_user_id">
-                        <Combobox v-model="form.noted_by_user_id" :options="lookups.users" placeholder="Search user…" />
+                        <Combobox v-model="form.noted_by_user_id" :options="lookups.approvers" placeholder="Search Management staff…" />
                     </FormField>
                 </div>
             </section>

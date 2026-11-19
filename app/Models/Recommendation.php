@@ -38,9 +38,9 @@ class Recommendation extends Model
 
     public function asset(): BelongsTo         { return $this->belongsTo(Asset::class); }
     public function requestor(): BelongsTo     { return $this->belongsTo(Employee::class, 'requestor_employee_id'); }
-    public function preparedBy(): BelongsTo    { return $this->belongsTo(User::class, 'prepared_by_user_id'); }
-    public function reviewedBy(): BelongsTo    { return $this->belongsTo(User::class, 'reviewed_by_user_id'); }
-    public function notedBy(): BelongsTo       { return $this->belongsTo(User::class, 'noted_by_user_id'); }
+    public function preparedBy(): BelongsTo    { return $this->belongsTo(Employee::class, 'prepared_by_user_id'); }
+    public function reviewedBy(): BelongsTo    { return $this->belongsTo(Employee::class, 'reviewed_by_user_id'); }
+    public function notedBy(): BelongsTo       { return $this->belongsTo(Employee::class, 'noted_by_user_id'); }
     public function partChanges(): HasMany     { return $this->hasMany(AssetPartChange::class); }
 
     public static function nextDocNo(): string

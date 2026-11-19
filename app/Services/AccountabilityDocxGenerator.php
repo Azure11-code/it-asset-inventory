@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Employee;
 use App\Models\Signatory;
+use PhpOffice\PhpWord\Settings;
 use PhpOffice\PhpWord\TemplateProcessor;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -24,6 +25,11 @@ class AccountabilityDocxGenerator
      */
     public function generate(Employee $employee, ?array $assetIds = null): StreamedResponse
     {
+        // Without this, setValue() drops the replacement text into the
+        // template's XML verbatim, so an "&" in a name or an asset description
+        // corrupts the file and Word reports an "Xml parsing error".
+        Settings::setOutputEscapingEnabled(true);
+
         $employee->load(['department']);
         $query = $employee->heldAssets()
             ->with(['brand:id,name', 'category:id,name'])

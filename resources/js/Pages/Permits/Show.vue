@@ -27,10 +27,11 @@ const statusTone = {
     cancelled: 'rose',
 };
 
+// Printed documents spell the date out in full: "November 16, 2026".
 const fmtDate = (s) => {
     if (!s) return '';
     const d = new Date(s);
-    return d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: '2-digit' }).replace(',', '');
+    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
 };
 
 const downloading = ref(false);

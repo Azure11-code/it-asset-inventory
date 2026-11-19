@@ -141,9 +141,9 @@ class RecommendationController extends Controller implements HasMiddleware
             'quick_specs.*.label'   => ['nullable', 'string', 'max:100'],
             'quick_specs.*.value'   => ['nullable', 'string', 'max:255'],
             'quick_specs.*.note'    => ['nullable', 'string', 'max:255'],
-            'prepared_by_user_id'   => ['nullable', 'exists:users,id'],
-            'reviewed_by_user_id'   => ['nullable', 'exists:users,id'],
-            'noted_by_user_id'      => ['nullable', 'exists:users,id'],
+            'prepared_by_user_id'   => ['nullable', 'exists:employees,id'],
+            'reviewed_by_user_id'   => ['nullable', 'exists:employees,id'],
+            'noted_by_user_id'      => ['nullable', 'exists:employees,id'],
             'status'                => ['required', \Illuminate\Validation\Rule::in(['draft', 'submitted', 'approved', 'closed'])],
         ]);
     }
@@ -186,9 +186,9 @@ class RecommendationController extends Controller implements HasMiddleware
                 'position'      => $r->requestor?->position ?? $r->requestor_position,
                 'department'    => $r->requestor?->department?->name ?? $r->requestor_department,
             ],
-            'prepared_by'  => $r->preparedBy?->name,
-            'reviewed_by'  => $r->reviewedBy?->name,
-            'noted_by'     => $r->notedBy?->name,
+            'prepared_by'  => $r->preparedBy?->full_name,
+            'reviewed_by'  => $r->reviewedBy?->full_name,
+            'noted_by'     => $r->notedBy?->full_name,
         ]);
     }
 
@@ -211,7 +211,9 @@ class RecommendationController extends Controller implements HasMiddleware
                     'position'      => $e->position,
                     'department_id' => $e->department_id,
                 ])->values(),
-            'users' => User::orderBy('name')->get(['id', 'name']),
+            // IT staff prepare, note and review; Management approves.
+            'signatories' => Employee::signatoryOptions(Employee::SIGNS_AS_PREPARER),
+            'approvers'   => Employee::signatoryOptions(Employee::SIGNS_AS_APPROVER),
         ];
     }
 }

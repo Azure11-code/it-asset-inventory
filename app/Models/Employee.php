@@ -40,6 +40,29 @@ class Employee extends Model
         return Attribute::get(fn () => trim("{$this->first_name} {$this->middle_name} {$this->last_name}"));
     }
 
+    /**
+     * Departments whose staff sign incident reports, recommendations and
+     * permits. IT prepares, notes and reviews; Management approves.
+     */
+    public const SIGNS_AS_PREPARER = 'INFORMATION TECHNOLOGY';
+    public const SIGNS_AS_APPROVER = 'MANAGEMENT';
+
+    /** Active staff of one department, shaped for a signature dropdown. */
+    public static function signatoryOptions(string $departmentName): \Illuminate\Support\Collection
+    {
+        return static::query()
+            ->where('status', 'active')
+            ->whereHas('department', fn ($d) => $d->whereRaw('UPPER(name) = ?', [mb_strtoupper($departmentName)]))
+            ->orderBy('last_name')->orderBy('first_name')
+            ->get(['id', 'first_name', 'middle_name', 'last_name', 'position'])
+            ->map(fn ($e) => [
+                'id'       => $e->id,
+                'name'     => $e->full_name,
+                'position' => $e->position,
+            ])
+            ->values();
+    }
+
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);

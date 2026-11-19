@@ -133,10 +133,10 @@ class IncidentReportController extends Controller implements HasMiddleware
             'action_taken'                => ['required', 'string'],
             'findings'                    => ['required', 'string'],
             'recommendation'              => ['required', 'string'],
-            'prepared_by_user_id'         => ['nullable', 'exists:users,id'],
-            'noted_by_user_id'            => ['nullable', 'exists:users,id'],
-            'noted_by_secondary_user_id'  => ['nullable', 'exists:users,id'],
-            'approved_by_user_id'         => ['nullable', 'exists:users,id'],
+            'prepared_by_user_id'         => ['nullable', 'exists:employees,id'],
+            'noted_by_user_id'            => ['nullable', 'exists:employees,id'],
+            'noted_by_secondary_user_id'  => ['nullable', 'exists:employees,id'],
+            'approved_by_user_id'         => ['nullable', 'exists:employees,id'],
             'report_date'                 => ['required', 'date'],
             'status'                      => ['required', \Illuminate\Validation\Rule::in(['draft', 'submitted', 'approved', 'closed'])],
         ]);
@@ -172,16 +172,16 @@ class IncidentReportController extends Controller implements HasMiddleware
                 'brand'           => $r->asset->brand?->name,
                 'model'           => $r->asset->model,
                 'serial_number'   => $r->asset->serial_number,
-                'purchase_date'   => $r->asset->purchase_date?->format('M d, Y'),
-                'deployment_date' => $r->asset->deployment_date?->format('M d, Y'),
+                'purchase_date'   => $r->asset->purchase_date?->format('F j, Y'),
+                'deployment_date' => $r->asset->deployment_date?->format('F j, Y'),
                 'lifespan_years'  => $r->asset->expected_lifespan_years,
                 'specifications'  => $r->asset->specifications,
             ] : null,
             'end_user'           => $r->endUser?->full_name ?? $r->end_user_name,
-            'prepared_by'        => $r->preparedBy?->name,
-            'noted_by'           => $r->notedBy?->name,
-            'noted_by_secondary' => $r->notedBySecondary?->name,
-            'approved_by'        => $r->approvedBy?->name,
+            'prepared_by'        => $r->preparedBy?->full_name,
+            'noted_by'           => $r->notedBy?->full_name,
+            'noted_by_secondary' => $r->notedBySecondary?->full_name,
+            'approved_by'        => $r->approvedBy?->full_name,
         ]);
     }
 
@@ -195,7 +195,9 @@ class IncidentReportController extends Controller implements HasMiddleware
             'employees' => Employee::orderBy('last_name')
                 ->get(['id', 'first_name', 'middle_name', 'last_name'])
                 ->map(fn ($e) => ['id' => $e->id, 'name' => $e->full_name])->values(),
-            'users' => User::orderBy('name')->get(['id', 'name']),
+            // IT staff prepare, note and review; Management approves.
+            'signatories' => Employee::signatoryOptions(Employee::SIGNS_AS_PREPARER),
+            'approvers'   => Employee::signatoryOptions(Employee::SIGNS_AS_APPROVER),
         ];
     }
 }
